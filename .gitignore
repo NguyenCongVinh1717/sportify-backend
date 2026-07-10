@@ -1,5 +1,5 @@
 # Config nhạy cảm
-src/main/resources/application.properties
+# src/main/resources/application.properties
 
 # Build & IDE
 target/

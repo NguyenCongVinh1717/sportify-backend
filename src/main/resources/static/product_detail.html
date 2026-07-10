@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chi tiết sản phẩm | Sportify Premium Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --white: #ffffff;
+      --gray-bg: #f8f9fa;
+      --gray-border: #e5e7eb;
+      --black: #111111;
+      --text-muted: #6b7280;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.04);
+      --radius: 8px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+    }
+
+    body { 
+      background-color: var(--white); 
+      color: var(--black); 
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== HEADER ĐỒNG BỘ ===== */
+    .topbar {
+      position: sticky; 
+      top: 0; 
+      z-index: 1000; 
+      background: rgba(255, 255, 255, 0.95); 
+      border-bottom: 1px solid var(--gray-border); 
+      padding: 16px 0; 
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-inner {
+      max-width: 1440px; 
+      margin: 0 auto; 
+      padding: 0 40px;
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+    }
+
+    .brand-wrapper {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 40px; 
+      height: 40px;
+      background: var(--black); 
+      border-radius: 8px;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+    }
+    
+    .brand-logo i { 
+      color: var(--white); 
+      font-size: 18px; 
+    }
+
+    .brand-title { 
+      font-size: 24px; 
+      font-weight: 900; 
+      font-style: italic;
+      letter-spacing: -1px;
+      color: var(--black); 
+      margin-left: 12px; 
+      text-transform: uppercase;
+    }
+
+    .cart-btn-wrapper { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      text-decoration: none; 
+      color: var(--black); 
+      font-weight: 700; 
+      font-size: 13px; 
+      background: var(--gray-bg); 
+      padding: 10px 20px; 
+      border-radius: 50px; 
+      border: 1px solid var(--gray-border);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: var(--transition); 
+    }
+    
+    .cart-btn-wrapper:hover {
+      background: var(--black);
+      color: var(--white);
+      border-color: var(--black);
+    }
+
+    .cart-icon-container { 
+      position: relative; 
+      display: flex; 
+      align-items: center; 
+    }
+    
+    .cart-icon-container i {
+      font-size: 15px;
+    }
+
+    .cart-badge { 
+      position: absolute; 
+      top: -12px; 
+      right: -12px; 
+      background: var(--black); 
+      color: var(--white); 
+      font-size: 10px; 
+      font-weight: 800; 
+      width: 18px; 
+      height: 18px; 
+      border-radius: 50%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      border: 2px solid var(--white); 
+    }
+
+    .cart-btn-wrapper:hover .cart-badge {
+      background: var(--white);
+      color: var(--black);
+    }
+
+    /* ===== LAYOUT CHI TIẾT SẢN PHẨM ===== */
+    .main-detail { 
+      max-width: 1440px; 
+      margin: 50px auto 100px; 
+      padding: 0 40px; 
+      display: grid; 
+      grid-template-columns: 1.2fr 1fr; 
+      gap: 80px; 
+    }
+    
+    /* KHU VỰC ALBUM ẢNH */
+    .gallery-container {
+      position: sticky;
+      top: 120px;
+      height: fit-content;
+    }
+
+    .main-img-view { 
+      background: var(--gray-bg); 
+      border-radius: var(--radius); 
+      overflow: hidden; 
+      aspect-ratio: 1/1; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      margin-bottom: 20px; 
+      border: 1px solid var(--gray-border);
+    }
+    
+    .main-img-view img { 
+      width: 85%; 
+      height: auto; 
+      object-fit: contain; 
+      transition: transform 0.5s ease;
+    }
+
+    .thumbnail-grid { 
+      display: grid; 
+      grid-template-columns: repeat(5, 1fr); 
+      gap: 12px; 
+    }
+    
+    .thumb-item { 
+      aspect-ratio: 1/1; 
+      border-radius: 6px; 
+      background: var(--gray-bg); 
+      cursor: pointer; 
+      border: 1px solid var(--gray-border); 
+      overflow: hidden; 
+      padding: 4px;
+      transition: var(--transition);
+    }
+    
+    .thumb-item:hover {
+      border-color: var(--black);
+    }
+
+    .thumb-item.active { 
+      border-color: var(--black); 
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .thumb-item img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: contain; 
+    }
+
+    /* KHU VỰC THÔNG TIN & BIẾN THỂ */
+    .brand-label { 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      color: var(--text-muted); 
+      font-size: 12px; 
+      letter-spacing: 2px; 
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    
+    .p-name { 
+      font-size: 36px; 
+      font-weight: 800; 
+      line-height: 1.2; 
+      margin: 5px 0 15px; 
+      color: var(--black);
+      letter-spacing: -0.5px;
+    }
+    
+    .p-price { 
+      font-size: 26px; 
+      font-weight: 800; 
+      margin-bottom: 35px; 
+      color: var(--black);
+      border-bottom: 1px solid var(--gray-border);
+      padding-bottom: 20px;
+    }
+
+    .variant-selector { 
+      margin-bottom: 28px; 
+    }
+    
+    .variant-title { 
+      font-size: 11px; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      margin-bottom: 12px; 
+      display: block; 
+      color: var(--black); 
+      letter-spacing: 0.5px;
+    }
+    
+    .options-grid { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+    }
+    
+    /* Nút chọn thuộc tính tối giản */
+    .option-btn { 
+      padding: 12px 22px; 
+      border: 1px solid var(--gray-border); 
+      border-radius: 6px; 
+      font-size: 13px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      transition: var(--transition); 
+      background: var(--white); 
+      color: var(--black);
+      min-width: 65px; 
+      text-transform: uppercase;
+    }
+    
+    .option-btn:hover:not(.disabled) { 
+      border-color: var(--black); 
+      background: var(--gray-bg);
+    }
+    
+    .option-btn.selected { 
+      background: var(--black); 
+      color: var(--white); 
+      border-color: var(--black); 
+    }
+    
+    .option-btn.disabled { 
+      opacity: 0.25; 
+      cursor: not-allowed; 
+      text-decoration: line-through; 
+      background: var(--gray-bg);
+    }
+
+    /* Trạng thái kho hàng */
+    .stock-status { 
+      font-size: 13px; 
+      margin: 25px 0; 
+      font-weight: 700; 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .dot { 
+      width: 8px; 
+      height: 8px; 
+      border-radius: 50%; 
+      background: #d1d5db; 
+    }
+
+    /* Nút Thêm vào giỏ hàng Đen nguyên khối */
+    .btn-add-cart { 
+      width: 100%; 
+      background: var(--black); 
+      color: var(--white); 
+      border: none; 
+      padding: 18px; 
+      font-weight: 700; 
+      font-size: 14px; 
+      border-radius: var(--radius); 
+      cursor: pointer; 
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: var(--transition); 
+    }
+    
+    .btn-add-cart:hover:not(:disabled) { 
+      background: #222222;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .btn-add-cart:disabled { 
+      background: var(--gray-border); 
+      color: #9ca3af; 
+      cursor: not-allowed; 
+    }
+
+    .error-msg { 
+      color: var(--danger); 
+      font-size: 12px; 
+      font-weight: 700; 
+      margin-bottom: 15px; 
+      display: none; 
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Phản hồi thiết bị di động */
+    @media (max-width: 1024px) { 
+      .main-detail { grid-template-columns: 1fr; gap: 40px; padding: 0 20px; } 
+      .topbar-inner { padding: 0 20px; }
+      .gallery-container { position: relative; top: 0; }
+      .p-name { font-size: 30px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand-wrapper">
+        <div class="brand-logo">
+          <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+        <div class="brand-title">SPORTIFY</div>
+      </a>
+      <a href="cart.html" class="cart-btn-wrapper">
+        <div class="cart-icon-container">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span class="cart-badge" id="cart-count">0</span>
+        </div>
+        <span>Giỏ hàng</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="main-detail" id="product-content">
+    <div style="padding: 100px 0; text-align: center; grid-column: 1/-1; color: var(--text-muted); font-weight: 500;">
+      <i class="fa-solid fa-spinner fa-spin" style="margin-right: 8px; font-size: 18px;"></i> Đang tải thông tin sản phẩm...
+    </div>
+  </main>
+
+  <script src="api.js"></script>
+  <script>
+    const IMG_BASE = "http://localhost:8081/images/";
+    let productData = null;
+    let selectedColorId = null;
+    let selectedSizeId = null;
+    let globalCartCount = 0;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+
+    async function initPage() {
+      const savedCount = localStorage.getItem('vinh_cart_count');
+      if (savedCount) {
+        globalCartCount = parseInt(savedCount);
+        document.getElementById('cart-count').innerText = globalCartCount;
+      }
+      await loadCartCountFromBackend();
+      if (productId) loadProduct();
+    }
+
+    async function loadCartCountFromBackend() {
+      try {
+        const res = await apiGet('/cart');
+        const count = (res.items || []).reduce((acc, item) => acc + item.quantity, 0);
+        updateCartUI(count);
+      } catch (err) { 
+        console.error("Chưa đăng nhập"); 
+      }
+    }
+
+    async function loadProduct() {
+      try {
+        productData = await apiGet(`/products/${productId}`);
+        renderProduct(productData);
+      } catch (err) {
+        document.getElementById('product-content').innerHTML = `
+          <div style="text-align: center; padding: 80px 0; grid-column: 1/-1;">
+            <i class="fa-solid fa-circle-exclamation" style="font-size: 48px; color: var(--danger); margin-bottom: 20px;"></i>
+            <h2 style="font-size: 22px; font-weight: 800;">Sản phẩm không tồn tại hoặc đã ngừng kinh doanh</h2>
+            <a href="index.html" class="btn-add-cart" style="display: inline-block; width: auto; margin-top: 20px; padding: 14px 30px; text-decoration: none;">Quay về trang chủ</a>
+          </div>`;
+      }
+    }
+
+    function renderProduct(p) {
+      const images = p.images && p.images.length > 0 ? p.images : [];
+      const mainImgSrc = images.length > 0 ? (images[0].startsWith('http') ? images[0] : IMG_BASE + images[0]) : 'https://via.placeholder.com/600';
+
+      const colors = [...new Map(p.variants.map(v => [v.colorId, {id: v.colorId, name: v.colorName}])).values()];
+      const sizes = [...new Map(p.variants.map(v => [v.sizeId, {id: v.sizeId, name: v.sizeName}])).values()];
+
+      const container = document.getElementById('product-content');
+      container.innerHTML = `
+        <div class="gallery-container">
+          <div class="main-img-view">
+            <img src="${mainImgSrc}" id="mainImg">
+          </div>
+          <div class="thumbnail-grid">
+            ${images.map((img, idx) => {
+              const src = img.startsWith('http') ? img : IMG_BASE + img;
+              return `
+                <div class="thumb-item ${idx === 0 ? 'active' : ''}" onclick="switchImg(this, '${src}')">
+                  <img src="${src}">
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <div class="info-container">
+          <span class="brand-label">${p.brandName}</span>
+          <h1 class="p-name">${p.productName}</h1>
+          <div class="p-price">${p.price.toLocaleString('vi-VN')}đ</div>
+          
+          <div class="variant-selector">
+            <span class="variant-title">Màu sắc</span>
+            <div class="options-grid" id="color-options">
+              ${colors.map(c => `<button class="option-btn" onclick="selectColor(${c.id}, this)">${c.name}</button>`).join('')}
+            </div>
+          </div>
+
+          <div class="variant-selector">
+            <span class="variant-title">Kích thước</span>
+            <div class="options-grid" id="size-options">
+              ${sizes.map(s => `<button class="option-btn" onclick="selectSize(${s.id}, this)">${s.name}</button>`).join('')}
+            </div>
+          </div>
+
+          <div id="variant-error" class="error-msg">
+            <i class="fa-solid fa-circle-exclamation"></i> Vui lòng chọn đầy đủ Màu sắc và Kích thước trước khi mua.
+          </div>
+
+          <div class="stock-status" id="stock-info">
+            <div class="dot"></div> Chọn biến thể để xem tình trạng hàng
+          </div>
+
+          <button class="btn-add-cart" id="add-btn" onclick="handleAddToCart()">Thêm vào giỏ hàng</button>
+        </div>
+      `;
+    }
+
+    function switchImg(el, src) {
+      document.getElementById('mainImg').src = src;
+      document.querySelectorAll('.thumb-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function selectColor(id, el) {
+      selectedColorId = id;
+      document.querySelectorAll('#color-options .option-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      updateStockUI();
+    }
+
+    function selectSize(id, el) {
+      selectedSizeId = id;
+      document.querySelectorAll('#size-options .option-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      updateStockUI();
+    }
+
+    function updateStockUI() {
+      const errorMsg = document.getElementById('variant-error');
+      const stockInfo = document.getElementById('stock-info');
+      const addBtn = document.getElementById('add-btn');
+
+      if (selectedColorId && selectedSizeId) {
+        errorMsg.style.display = 'none';
+        const v = productData.variants.find(v => v.colorId === selectedColorId && v.sizeId === selectedSizeId);
+        
+        if (v) {
+          const isOutOfStock = v.stock <= 0;
+          stockInfo.innerHTML = `
+            <div class="dot" style="background: ${isOutOfStock ? 'var(--danger)' : 'var(--success)'}"></div> 
+            ${isOutOfStock ? 'Hết hàng' : `Tình trạng: Còn lại ${v.stock} sản phẩm`}`;
+          addBtn.disabled = isOutOfStock;
+          addBtn.innerText = isOutOfStock ? "HẾT HÀNG" : "THÊM VÀO GIỎ HÀNG";
+        } else {
+          stockInfo.innerHTML = `<div class="dot" style="background: var(--danger)"></div> Không có sẵn mẫu phối này`;
+          addBtn.disabled = true;
+        }
+      }
+    }
+
+    async function handleAddToCart() {
+      if (!selectedColorId || !selectedSizeId) {
+        document.getElementById('variant-error').style.display = 'flex';
+        return;
+      }
+
+      const variant = productData.variants.find(v => 
+        v.colorId === selectedColorId && v.sizeId === selectedSizeId
+      );
+
+      if (!variant) {
+        Swal.fire({ icon: 'error', title: 'Lỗi hệ thống', text: 'Biến thể mẫu này hiện không tồn tại!' });
+        return;
+      }
+
+      try {
+        await apiPost('/cart/add', { 
+          productColorSizeId: variant.id, 
+          quantity: 1 
+        });
+
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Đã thêm vào giỏ hàng!', 
+          text: 'Sản phẩm đã có trong bộ sưu tập của bạn.',
+          showConfirmButton: false, 
+          timer: 1500 
+        });
+        
+        await loadCartCountFromBackend();
+      } catch (err) {
+        console.error("Lỗi thêm vào giỏ:", err);
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'Yêu cầu đăng nhập', 
+          text: 'Vui lòng đăng nhập tài khoản để thực hiện chức năng thêm sản phẩm!' 
+        });
+      }
+    }
+
+    function updateCartUI(count) {
+      globalCartCount = count;
+      document.getElementById('cart-count').innerText = count;
+      localStorage.setItem('vinh_cart_count', count);
+    }
+    document.addEventListener('DOMContentLoaded', initPage);
+  </script>
+</body>
+
+</html>

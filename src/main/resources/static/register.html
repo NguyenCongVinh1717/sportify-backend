@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng ký | Sportify Style Premium</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root {
+      --white: #ffffff;
+      --gray-bg: #f8f9fa;
+      --gray-border: #e5e7eb;
+      --black: #111111;
+      --text-muted: #6b7280;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.04);
+      --radius: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --error: #e11d48;
+      --success: #16a34a;
+    }
+
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+    }
+
+    body {
+      background-color: var(--white);
+      color: var(--black);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== HEADER ĐỒNG BỘ HOÀN HẢO ===== */
+    .topbar {
+      position: sticky; 
+      top: 0; 
+      z-index: 1000; 
+      background: rgba(255, 255, 255, 0.95); 
+      border-bottom: 1px solid var(--gray-border); 
+      padding: 16px 0; 
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-inner {
+      max-width: 1440px; 
+      margin: 0 auto; 
+      padding: 0 40px;
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+    }
+
+    .brand-wrapper {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 40px; 
+      height: 40px;
+      background: var(--black); 
+      border-radius: 8px;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+    }
+    
+    .brand-logo i { 
+      color: var(--white); 
+      font-size: 18px; 
+    }
+
+    .brand-title { 
+      font-size: 24px; 
+      font-weight: 900; 
+      font-style: italic;
+      letter-spacing: -1px;
+      color: var(--black); 
+      margin-left: 12px; 
+      text-transform: uppercase;
+    }
+
+    .auth-links a {
+      color: var(--black);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .auth-links a:hover {
+      color: var(--text-muted);
+    }
+
+    /* ===== REGISTER FORM CAO CẤP ===== */
+    .auth-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      background: var(--gray-bg);
+    }
+
+    .auth-card {
+      background: var(--white);
+      width: 100%;
+      max-width: 460px;
+      padding: 50px 40px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-premium);
+      border: 1px solid var(--gray-border);
+    }
+
+    .auth-header h2 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--black);
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+    }
+
+    .auth-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 25px;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    /* Vùng hiển thị thông báo phản hồi */
+    .msg {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .msg.error-msg { color: var(--error); }
+    .msg.success-msg { color: var(--success); }
+
+    /* Thành phần Form */
+    .form-group {
+      text-align: left;
+      margin-bottom: 22px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      color: var(--black);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 13px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--gray-border);
+      background: var(--gray-bg);
+      font-size: 14px;
+      font-weight: 500;
+      transition: var(--transition);
+      outline: none;
+      color: var(--black);
+    }
+
+    .form-group input:focus {
+      border-color: var(--black);
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Nút kích hoạt */
+    .btn-submit {
+      width: 100%;
+      padding: 15px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      background: var(--black);
+      color: var(--white);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: var(--transition);
+    }
+
+    .btn-submit:hover {
+      background: #222222;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .auth-footer {
+      margin-top: 25px;
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .auth-footer a {
+      color: var(--black);
+      font-weight: 700;
+      text-decoration: none;
+      border-bottom: 1px solid var(--black);
+      padding-bottom: 1px;
+      transition: var(--transition);
+    }
+
+    .auth-footer a:hover {
+      color: var(--text-muted);
+      border-color: var(--text-muted);
+    }
+
+    /* ===== FOOTER ĐỒNG BỘ ===== */
+    .footer {
+      background: var(--white);
+      color: var(--text-muted);
+      padding: 30px 0;
+      text-align: center;
+      border-top: 1px solid var(--gray-border);
+    }
+    
+    .footer-bottom { 
+      font-size: 13px; 
+      font-weight: 600; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Phản hồi thiết bị di động */
+    @media (max-width: 480px) {
+      .topbar-inner { padding: 0 20px; }
+      .brand-title { font-size: 20px; }
+      .auth-card { padding: 40px 24px; }
+      .auth-header h2 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="products.html" class="brand-wrapper">
+        <div class="brand-logo">
+          <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+        <div class="brand-title">SPORTIFY</div>
+      </a>
+      <div class="auth-links">
+        <a href="products.html"><i class="fa-solid fa-arrow-left-long"></i> Quay lại cửa hàng</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Tạo tài khoản</h2>
+        <p>Tham gia cộng đồng Sportify để nhận những đặc quyền và bộ sưu tập thể thao mới nhất.</p>
+      </div>
+
+      <div id="msg" class="msg"></div>
+
+      <div id="formContainer">
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="email">Địa chỉ Email</label>
+            <input type="email" id="email" placeholder="example@gmail.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="fullName">Họ và tên</label>
+            <input type="text" id="fullName" placeholder="Ví dụ: Nguyễn Văn Vinh" required>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Mật khẩu</label>
+            <input type="password" id="password" placeholder="Nhập mật khẩu ít nhất 6 ký tự" minlength="6" required>
+          </div>
+
+          <div class="form-group">
+            <label for="confirm-password">Xác nhận mật khẩu</label>
+            <input type="password" id="confirm-password" placeholder="Nhập lại mật khẩu phía trên" required>
+          </div>
+
+          <button type="submit" class="btn-submit">Đăng ký ngay</button>
+
+          <div style="display: flex; align-items: center; margin: 20px 0; color: var(--text-muted); font-size: 13px; font-weight: 600;">
+            <div style="flex: 1; height: 1px; background: var(--gray-border);"></div>
+            <span style="padding: 0 10px; text-transform: uppercase;">Hoặc</span>
+            <div style="flex: 1; height: 1px; background: var(--gray-border);"></div>
+          </div>
+
+          <button type="button" id="btnGoogleAuth" class="btn-submit" style="background: #ffffff; color: #111111; border: 1px solid var(--gray-border); display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-24dp/copy_of_v6_24dp.svg" alt="Google Logo" style="width: 18px; height: 18px;">
+            Tiếp tục với Google
+          </button>
+        </form>
+      </div>
+
+      <div class="auth-footer">
+        Đã có tài khoản? <a href="login.html">Đăng nhập ngay</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-bottom">© 2026 Sportify Premium Store. Crafted for Excellence.</div>
+  </footer>
+
+  <script src="api.js"></script>
+  <script>
+    const formContainer = document.getElementById('formContainer');
+    const registerForm = document.getElementById('registerForm');
+    const msg = document.getElementById('msg');
+    
+    // Quản lý biến cấu hình đăng nhập Google và OTP bộ nhớ tạm
+    const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"; // <-- Hãy thay Client ID của ông vào đây
+    let currentEmail = "";
+    let currentFullName = "";
+    let currentPassword = "";
+    let countdownTimer = null;
+    let timeLeft = 60;
+
+    // ================= LUỒNG 1: ĐĂNG KÝ BẰNG EMAIL THẬT + XÁC THỰC OTP =================
+    
+    // Hàm xử lý đếm ngược thời gian gửi lại mã OTP (60s)
+    function startCountdown() {
+      const btnResend = document.getElementById('btnResend');
+      const timerDisplay = document.getElementById('timerDisplay');
+      timeLeft = 60;
+      
+      btnResend.style.pointerEvents = 'none';
+      btnResend.style.color = 'var(--text-muted)';
+      btnResend.style.textDecoration = 'none';
+      
+      if (countdownTimer) clearInterval(countdownTimer);
+
+      countdownTimer = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = `(${timeLeft}s)`;
+
+        if (timeLeft <= 0) {
+          clearInterval(countdownTimer);
+          timerDisplay.textContent = '';
+          btnResend.style.pointerEvents = 'auto';
+          btnResend.style.color = 'var(--black)';
+          btnResend.style.textDecoration = 'underline';
+        }
+      }, 1000);
+    }
+
+    // Hàm xử lý logic gọi lại API để tái gửi mã OTP mới
+    async function resendOtpLogic() {
+      try {
+        msg.textContent = 'Đang gửi lại mã OTP mới, vui lòng đợi...';
+        msg.className = 'msg';
+        
+        const requestBody = { email: currentEmail, fullName: currentFullName, password: currentPassword };
+        await apiPost('/auth/register', requestBody, false);
+        
+        msg.textContent = 'Mã OTP mới đã được gửi vào Gmail của bạn!';
+        msg.className = 'msg success-msg';
+        startCountdown();
+      } catch (err) {
+        msg.textContent = err.message || 'Gửi lại mã thất bại!';
+        msg.className = 'msg error-msg';
+      }
+    }
+
+    // Lắng nghe sự kiện submit form đăng ký ban đầu
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      msg.textContent = '';
+      msg.className = 'msg';
+
+      const email = document.getElementById('email').value.trim();
+      const fullName = document.getElementById('fullName').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const confirmPassword = document.getElementById('confirm-password').value.trim();
+
+      if (password !== confirmPassword) {
+        msg.textContent = 'Mật khẩu xác nhận không trùng khớp!';
+        msg.className = 'msg error-msg';
+        return;
+      }
+
+      // Lưu trữ thông tin để phục vụ tính năng gửi lại mã nếu cần
+      currentEmail = email;
+      currentFullName = fullName;
+      currentPassword = password;
+
+      try {
+        const requestBody = { email, fullName, password };
+
+        // 1. Gọi API đăng ký (Backend gửi email và trả về chuỗi thông báo)
+        await apiPost('/auth/register', requestBody, false);
+        
+        msg.textContent = 'Mã OTP kích hoạt đã được gửi vào Gmail của bạn!';
+        msg.className = 'msg success-msg';
+
+        // 2. LẬT FORM: Chuyển đổi giao diện sang nhập mã OTP kích hoạt
+        formContainer.innerHTML = `
+          <form id="otpForm">
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="otpCode">Mã xác thực OTP (6 chữ số)</label>
+              <input type="text" id="otpCode" placeholder="Nhập 6 số..." maxlength="6" required 
+                     style="text-align: center; letter-spacing: 6px; font-size: 20px; font-weight: 700;">
+            </div>
+            
+            <div style="font-size: 13px; text-align: center; margin: -10px 0 20px 0; color: var(--text-muted); font-weight: 500;">
+              Không nhận được mã? 
+              <a href="#" id="btnResend" style="font-weight: 700; color: var(--text-muted); transition: all 0.2s; pointer-events: none; text-decoration: none;">
+                Gửi lại mã
+              </a> 
+              <span id="timerDisplay" style="font-weight: 700; color: var(--black);">(60s)</span>
+            </div>
+
+            <button type="submit" class="btn-submit">Xác nhận kích hoạt</button>
+          </form>
+        `;
+
+        startCountdown();
+
+        // Đăng ký sự kiện nút "Gửi lại mã"
+        document.getElementById('btnResend').addEventListener('click', (event) => {
+          event.preventDefault();
+          resendOtpLogic();
+        });
+
+        // Đăng ký sự kiện submit form OTP để xác nhận kích hoạt tài khoản thương hiệu
+        document.getElementById('otpForm').addEventListener('submit', async (otpEvent) => {
+          otpEvent.preventDefault();
+          const otpVal = document.getElementById('otpCode').value.trim();
+
+          if (otpVal.length < 6) {
+            msg.textContent = 'Vui lòng nhập đủ 6 chữ số!';
+            msg.className = 'msg error-msg';
+            return;
+          }
+
+          try {
+            // Thực hiện gọi fetch trực tiếp lên cổng Backend xử lý xác thực OTP
+            const response = await fetch(`http://localhost:8081/auth/verify-otp?email=${encodeURIComponent(currentEmail)}&otp=${encodeURIComponent(otpVal)}`, {
+              method: 'POST'
+            });
+
+            if (!response.ok) {
+              // Trích xuất thông báo lỗi từ Custom Global Exception của Spring Boot
+              const errorData = await response.json().catch(() => ({ message: "Mã OTP không chính xác hoặc đã hết hạn!" }));
+              throw new Error(errorData.message || "Xác thực kích hoạt thất bại!");
+            }
+
+            const data = await response.json();
+            if (countdownTimer) clearInterval(countdownTimer);
+
+            msg.textContent = 'Xác thực email đăng ký thành công! Đang tiến vào hệ thống...';
+            msg.className = 'msg success-msg';
+            
+            // Đồng bộ dữ liệu phiên làm việc hệ thống
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('role', data.role);
+            localStorage.setItem('fullName', data.fullName);
+            localStorage.setItem('userId', data.userId);
+
+            setTimeout(() => {
+              window.location.href = 'products.html';
+            }, 1500);
+
+          } catch (verifyErr) {
+            msg.textContent = verifyErr.message;
+            msg.className = 'msg error-msg';
+          }
+        });
+
+      } catch (err) {
+        console.error(err);
+        msg.textContent = err.message || 'Đăng ký thất bại! Email có thể đã tồn tại hoặc dữ liệu không hợp lệ.';
+        msg.className = 'msg error-msg';
+      }
+    });
+
+    // ================= LUỒNG 2: ĐĂNG NHẬP NHANH BẰNG GOOGLE =================
+    document.getElementById('btnGoogleAuth').addEventListener('click', () => {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse
+      });
+      google.accounts.id.prompt(); // Kích hoạt popup tài khoản Google cá nhân
+    });
+
+    async function handleCredentialResponse(response) {
+      try {
+        msg.textContent = 'Đang đồng bộ xác thực tài khoản Google...';
+        msg.className = 'msg success-msg';
+
+        // Gọi API Đăng nhập Google xử lý tự động (Hàm này ông chuẩn bị viết thêm ở AuthController sau)
+        const data = await apiPost('/auth/google', { idToken: response.credential }, false);
+
+        if (data) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('role', data.role);
+          localStorage.setItem('fullName', data.fullName);
+          localStorage.setItem('userId', data.userId);
+        }
+
+        msg.textContent = 'Đăng nhập Google thành công! Đang chuyển hướng...';
+        setTimeout(() => {
+          window.location.href = 'products.html';
+        }, 1200);
+
+      } catch (err) {
+        console.error(err);
+        msg.textContent = err.message || 'Kết nối xác thực Google thất bại!';
+        msg.className = 'msg error-msg';
+      }
+    }
+  </script>
+</body>
+</html>

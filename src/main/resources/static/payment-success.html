@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kết quả thanh toán | Sportify Premium Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --white: #ffffff;
+      --gray-bg: #f8f9fa;
+      --gray-border: #e5e7eb;
+      --black: #111111;
+      --text-muted: #6b7280;
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius: 8px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+    }
+
+    body { 
+      background-color: var(--white); 
+      color: var(--black); 
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== HEADER ĐỒNG BỘ ===== */
+    .topbar {
+      background: var(--white); 
+      border-bottom: 1px solid var(--gray-border); 
+      padding: 16px 0; 
+      width: 100%;
+    }
+
+    .topbar-inner {
+      max-width: 1440px; 
+      margin: 0 auto; 
+      padding: 0 40px;
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+    }
+
+    .brand-wrapper {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 40px; 
+      height: 40px;
+      background: var(--black); 
+      border-radius: 8px;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+    }
+    
+    .brand-logo i { color: var(--white); font-size: 18px; }
+    .brand-title { font-size: 24px; font-weight: 900; font-style: italic; letter-spacing: -1px; color: var(--black); margin-left: 12px; text-transform: uppercase; }
+
+    /* ===== MÀN HÌNH KẾT QUẢ ===== */
+    .result-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .result-card {
+      background: var(--gray-bg);
+      border: 1px solid var(--gray-border);
+      border-radius: var(--radius);
+      padding: 50px 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .result-icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+    }
+
+    .result-icon.success { color: var(--success); }
+    .result-icon.danger { color: var(--danger); }
+
+    .result-title {
+      font-size: 24px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .result-message {
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 30px;
+    }
+
+    .info-list {
+      text-align: left;
+      background: var(--white);
+      border: 1px solid var(--gray-border);
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .info-row:last-child { margin-bottom: 0; }
+    .info-row span:first-child { color: var(--text-muted); }
+    .info-row span:last-child { color: var(--black); }
+
+    .action-btn {
+      display: inline-block;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      background: var(--black);
+      color: var(--white);
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: var(--radius);
+      text-transform: uppercase;
+      font-size: 13px;
+      letter-spacing: 1px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .action-btn:hover {
+      background: #222222;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="products.html" class="brand-wrapper">
+        <div class="brand-logo">
+          <i class="fa-solid fa-bolt-lightning"></i>
+        </div>
+        <div class="brand-title">SPORTIFY</div>
+      </a>
+    </div>
+  </header>
+
+  <main class="result-container">
+    <div class="result-card" id="loading-card">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; color: var(--black); margin-bottom: 20px;"></i>
+      <p style="font-weight: 600; color: var(--text-muted);">Đang xác thực giao dịch từ VNPAY...</p>
+    </div>
+
+    <div class="result-card" id="result-card" style="display: none;">
+      <div id="status-icon" class="result-icon"></div>
+      <h2 id="status-title" class="result-title"></h2>
+      <p id="status-message" class="result-message"></p>
+
+      <div class="info-list">
+        <div class="info-row">
+          <span>Mã đơn hàng:</span>
+          <span id="res-order-id">N/A</span>
+        </div>
+        <div class="info-row">
+          <span>Số tiền:</span>
+          <span id="res-amount">0đ</span>
+        </div>
+        <div class="info-row">
+          <span>Nội dung:</span>
+          <span id="res-info">N/A</span>
+        </div>
+      </div>
+
+      <a href="products.html" id="next-action-btn" class="action-btn">Quay lại cửa hàng</a>
+    </div>
+  </main>
+
+  <script src="api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function () {
+      // 1. Đọc toàn bộ tham số mà VNPAY đính trên URL trả về
+      const urlParams = new URLSearchParams(window.location.search);
+      const responseCode = urlParams.get('vnp_ResponseCode');
+      const orderId = urlParams.get('vnp_TxnRef');
+      const amount = urlParams.get('vnp_Amount');
+      const orderInfo = urlParams.get('vnp_OrderInfo');
+
+      // Chuyển danh sách tham số URL thành Object key-value để làm Body JSON gửi đi
+      const paramsObject = Object.fromEntries(urlParams.entries());
+
+      // 2. THAY ĐỔI TẠI ĐÂY: Gửi POST JSON qua API để đồng bộ chữ ký bảo mật và cập nhật DB
+      try {
+        // Tùy thuộc vào việc file api.js của bạn cấu trúc ra sao, bạn có thể dùng fetch thuần 
+        // hoặc hàm custom. Ở đây mình dùng fetch để đảm bảo chạy ăn ngay 100%:
+        const response = await fetch('/order/vnpay-callback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Nếu API /order của bạn yêu cầu Token đăng nhập thì mở dòng dưới ra:
+                // 'Authorization': 'Bearer ' + localStorage.getItem('token') 
+            },
+            body: JSON.stringify(paramsObject)
+        });
+        
+        const resultData = await response.json();
+        console.log("Kết quả phản hồi từ Backend:", resultData);
+      } catch (err) {
+        console.error("Lỗi đồng bộ dữ liệu sang Backend:", err);
+      }
+
+      // 3. Ẩn màn hình loading, hiển thị màn hình kết quả lên cho khách xem
+      document.getElementById('loading-card').style.display = 'none';
+      document.getElementById('result-card').style.display = 'block';
+
+      // Điền thông tin hóa đơn trực quan lên UI
+      document.getElementById('res-order-id').innerText = "#" + (orderId || "");
+      document.getElementById('res-amount').innerText = amount ? (parseInt(amount) / 100).toLocaleString('vi-VN') + 'đ' : '0đ';
+      document.getElementById('res-info').innerText = decodeURIComponent(orderInfo || "").replace(/\+/g, ' ');
+
+      const iconDiv = document.getElementById('status-icon');
+      const titleH2 = document.getElementById('status-title');
+      const messageP = document.getElementById('status-message');
+      const nextBtn = document.getElementById('next-action-btn');
+
+      // 4. Kiểm tra mã phản hồi để hiển thị giao diện tương ứng
+      if (responseCode === '00') {
+        iconDiv.className = "result-icon success";
+        iconDiv.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        titleH2.innerText = "Thanh toán thành công";
+        messageP.innerText = "🎉 Tuyệt vời! Đơn hàng của bạn đã được thanh toán và đang chờ hệ thống chuẩn bị giao.";
+        nextBtn.innerText = "Xem đơn hàng của tôi";
+        nextBtn.href = "my-orders.html"; 
+      } else {
+        iconDiv.className = "result-icon danger";
+        iconDiv.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+        titleH2.innerText = "Thanh toán thất bại";
+        messageP.innerText = "❌ Giao dịch không thành công hoặc đã bị hủy bỏ bởi người dùng.";
+        nextBtn.innerText = "Quay về giỏ hàng";
+        nextBtn.href = "cart.html"; 
+      }
+    });
+  </script>
+</body>
+
+</html>

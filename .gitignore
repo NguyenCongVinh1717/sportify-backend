@@ -1,0 +1,16 @@
+# Config nhạy cảm
+src/main/resources/application.properties
+
+# Build & IDE
+target/
+.idea/
+*.iml
+
+# Chứng chỉ SSL
+*.p12
+*.pfx
+*.crt
+*.key
+
+# Ảnh upload
+uploads/

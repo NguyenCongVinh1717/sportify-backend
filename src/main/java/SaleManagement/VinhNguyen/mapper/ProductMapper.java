@@ -38,13 +38,9 @@ public class ProductMapper {
             productResponse.brandCode(product.getBrand().getBrandCode());
             productResponse.brandName(product.getBrand().getBrandName());
         }
-        if(product.getImages()!=null) {
+        if (product.getImages() != null) {
             productResponse.images(product.getImages().stream()
-                            .map(img -> ServletUriComponentsBuilder
-                                    .fromCurrentContextPath()
-                                    .path("/images/")
-                                    .path(img.getUrl())
-                                    .toUriString())
+                    .map(img -> img.getUrl()) // Chỉ lấy tên file gốc: "1783997970840_cvrong.jpg"
                     .collect(Collectors.toList()));
         }
 

@@ -37,6 +37,8 @@ public class ProductService {
     private ColorRepository colorRepository;
     @Autowired
     private SizeRepository sizeRepository;
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
     @Value("${upload.path}")
     private String uploadPath;
@@ -103,20 +105,28 @@ public class ProductService {
 //    }
 
 
+//    public void deletePhysicalFile(String urlOrFileName) {
+//        if (urlOrFileName == null || urlOrFileName.isEmpty()) return;
+//
+//        // get fileName
+//        String fileName = urlOrFileName.contains("/")
+//                ? urlOrFileName.substring(urlOrFileName.lastIndexOf("/") + 1)
+//                : urlOrFileName;
+//
+//        // Tự động xử lý ký tự gạch chéo phân cách thư mục chuẩn theo Windows (\) hoặc Ubuntu (/)
+//        File file = Paths.get(uploadPath, fileName).toFile();
+//        if (file.exists()) {
+//            file.delete();
+//            System.out.println(">>> Đã xóa file vật lý thành công: " + file.getAbsolutePath());
+//        }
+//    }
+
+    // Thay đổi logic xóa file cục bộ thành xóa trên đám mây Cloudinary
     public void deletePhysicalFile(String urlOrFileName) {
         if (urlOrFileName == null || urlOrFileName.isEmpty()) return;
 
-        // get fileName
-        String fileName = urlOrFileName.contains("/")
-                ? urlOrFileName.substring(urlOrFileName.lastIndexOf("/") + 1)
-                : urlOrFileName;
-
-        // Tự động xử lý ký tự gạch chéo phân cách thư mục chuẩn theo Windows (\) hoặc Ubuntu (/)
-        File file = Paths.get(uploadPath, fileName).toFile();
-        if (file.exists()) {
-            file.delete();
-            System.out.println(">>> Đã xóa file vật lý thành công: " + file.getAbsolutePath());
-        }
+        // Gọi CloudinaryService xử lý dọn dẹp ảnh
+        cloudinaryService.deleteImage(urlOrFileName);
     }
 
     // --- Hàm Helper để kiểm tra trùng lặp biến thể ---

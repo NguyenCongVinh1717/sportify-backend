@@ -2,6 +2,7 @@ package SaleManagement.VinhNguyen.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -42,6 +43,10 @@ public class SecurityConfig {
                         .requestMatchers("/order/**").hasRole("USER")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/comments/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/comments/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/comments/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/comments/**").hasRole("USER")
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )

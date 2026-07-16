@@ -8,11 +8,13 @@ import SaleManagement.VinhNguyen.mapper.OrderMapper;
 import SaleManagement.VinhNguyen.repository.CartRepository;
 import SaleManagement.VinhNguyen.repository.Cart_ProductRepository;
 import SaleManagement.VinhNguyen.repository.OrderRepository;
+import SaleManagement.VinhNguyen.repository.UserRepository;
 import SaleManagement.VinhNguyen.request.OrderRequest;
 import SaleManagement.VinhNguyen.response.OrderResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -34,6 +36,8 @@ public class OrderService {
     private OrderRepository orderRepository;
     @Autowired
     private VNPayService vnPayService;
+    @Autowired
+    private UserRepository userRepository;
 
     @Transactional
     public OrderResponse checkout(String token, OrderRequest orderRequest, HttpServletRequest request){
@@ -221,5 +225,34 @@ public class OrderService {
     public OrderResponse getOrderUserByOrderId(Long id){
         Order order = orderRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
         return OrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse cancelOrder(String email, Long orderId){
+        User user = userRepository.findByEmail(email).orElseThrow(()
+                -> new AppException(ErrorCode.USER_NOT_FOUND));
+        Order myOrder = orderRepository.findById(orderId).orElseThrow(()
+                -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        if (!myOrder.getUser().getId().equals(user.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED_CANCEL_ORDER);
+        }
+        if (myOrder.getStatus().equals(OrderStatus.DELIVERED) || myOrder.getStatus().equals(OrderStatus.SHIPPING)) {
+            throw new AppException(ErrorCode.CANNOT_CANCEL_ORDER);
+        }
+
+        for (OrderItem item : myOrder.getOrderItems()) {
+            if (item != null
+                    && item.getProductColorSize() != null
+                    && item.getProductColorSize().getProduct() != null) {
+
+                if (!item.getProductColorSize().isDeleted() && !item.getProductColorSize().getProduct().isDeleted()) {
+                    item.getProductColorSize().setStock(item.getProductColorSize().getStock() + item.getQuantity());
+                }
+            }
+        }
+
+        myOrder.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(myOrder);
+        return OrderMapper.toResponse(myOrder);
     }
 }

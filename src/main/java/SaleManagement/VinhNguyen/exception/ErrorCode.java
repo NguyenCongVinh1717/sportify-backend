@@ -39,9 +39,9 @@ public enum ErrorCode {
     TOKEN_EXPIRED(1027,"Token is expired",HttpStatus.BAD_REQUEST ),
     TOO_MANY_LOGIN_ATTEMPTS(1028,"Cannot login because of having over 5 times" ,HttpStatus.BAD_REQUEST ),
     CANNOT_LOCK_YOURSELF(1029,"Cannot delete admin account" ,HttpStatus.BAD_REQUEST ),
-    NEW_PASS_AGAIN_EQUAL_NEW_PASS(1031,"You must enter equal to new password above",HttpStatus.BAD_REQUEST);
-
-
+    NEW_PASS_AGAIN_EQUAL_NEW_PASS(1031,"You must enter equal to new password above",HttpStatus.BAD_REQUEST),
+    CANNOT_CANCEL_ORDER(1033,"Cannot cancel this order, please contact my shop",HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_CANCEL_ORDER(1034,"Cannot cancel other people's order",HttpStatus.BAD_REQUEST);
     private final int code;
     private final String message;
     private final HttpStatusCode statusCode;

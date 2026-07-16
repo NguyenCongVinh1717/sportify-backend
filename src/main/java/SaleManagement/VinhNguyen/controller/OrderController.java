@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,5 +77,9 @@ public class OrderController {
     @GetMapping("/myOrders")
     public List<OrderResponse> getMyOrders(HttpServletRequest request){
         return orderService.getMyOrders(getAccessToken(request));
+    }
+    @PutMapping("/cancel-order/{orderId}")
+    public OrderResponse cancelOrder(Principal principal,@PathVariable Long orderId){
+        return orderService.cancelOrder(principal.getName(),orderId);
     }
 }

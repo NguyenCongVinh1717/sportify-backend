@@ -16,6 +16,7 @@ public enum ErrorCode {
     SIZE_NOT_FOUND(1017, "Size is not found", HttpStatus.NOT_FOUND),
     ORDER_NOT_FOUND(1025,"Order is not found",HttpStatus.NOT_FOUND),
     COMMENT_NOT_FOUND(1030,"Comment is not found",HttpStatus.NOT_FOUND),
+    STOP_SELL(1032,"Shop stop sell this product",HttpStatus.BAD_REQUEST),
 
     // 409 - Xung đột dữ liệu (Đã tồn tại)
     BRAND_EXISTED(1002, "Brand existed", HttpStatus.CONFLICT),

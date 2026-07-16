@@ -18,8 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -56,37 +54,45 @@ public class ProductService {
         return productPage.map(ProductMapper::toResponse);
     }
 
+    // Get product is_delete=false
     public Page<ProductResponse> getAllProductsPaged(Pageable pageable) {
-        Page<Product> productPage = productRepository.findAll(pageable);
+        Page<Product> productPage = productRepository.findByIsDeletedFalse(pageable);
         return productPage.map(ProductMapper::toResponse);
     }
 
+    // Get product is_delete=false
     public List<ProductResponse> getAllProducts(){
-        return productRepository.findAll().stream()
+        return productRepository.findByIsDeletedFalse(Pageable.unpaged()).getContent().stream()
                 .map(ProductMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
+    // Get product is_delete=false
     public Page<ProductResponse> getProductsByBrandIdPaged(Long brandId, Pageable pageable) {
-        Page<Product> productPage = productRepository.findByBrandId(brandId, pageable);
+        Page<Product> productPage = productRepository.findByBrandIdAndIsDeletedFalse(brandId, pageable);
         return productPage.map(ProductMapper::toResponse);
     }
 
     public ProductResponse getProductById(Long id){
         Product product = productRepository.findById(id).orElseThrow(() ->
                 new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        if (product.isDeleted()) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
         return ProductMapper.toResponse(product);
     }
 
+    // Get product is_delete=false
     public List<ProductResponse> getProductsByBrandId(Long brandId) {
-        return productRepository.findByBrandId(brandId).stream()
+        return productRepository.findByBrandIdAndIsDeletedFalse(brandId).stream()
                 .map(ProductMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
+    // Get product is_delete=false
     public Page<ProductResponse> getProductsByKeywords(String keywords, Pageable pageable) {
         String cleanKeywords = keywords != null ? keywords.trim() : "";
-        return productRepository.findByProductNameContainingIgnoreCase(cleanKeywords, pageable)
+        return productRepository.findByProductNameContainingIgnoreCaseAndIsDeletedFalse(cleanKeywords, pageable)
                 .map(ProductMapper::toResponse);
     }
 
@@ -99,37 +105,12 @@ public class ProductService {
         Page<Product> productPage = productRepository.findRelatedProductsPaged(brandId, id, pageable);
         return productPage.map(ProductMapper::toResponse);
     }
-//    public Page<ProductResponse> getProductsByPricePaged(Double maxPrice, Pageable pageable) {
-//        return productRepository.findByPriceLessThanEqual(maxPrice, pageable)
-//                .map(ProductMapper::toResponse);
-//    }
 
-
-//    public void deletePhysicalFile(String urlOrFileName) {
-//        if (urlOrFileName == null || urlOrFileName.isEmpty()) return;
-//
-//        // get fileName
-//        String fileName = urlOrFileName.contains("/")
-//                ? urlOrFileName.substring(urlOrFileName.lastIndexOf("/") + 1)
-//                : urlOrFileName;
-//
-//        // Tự động xử lý ký tự gạch chéo phân cách thư mục chuẩn theo Windows (\) hoặc Ubuntu (/)
-//        File file = Paths.get(uploadPath, fileName).toFile();
-//        if (file.exists()) {
-//            file.delete();
-//            System.out.println(">>> Đã xóa file vật lý thành công: " + file.getAbsolutePath());
-//        }
-//    }
-
-    // Thay đổi logic xóa file cục bộ thành xóa trên đám mây Cloudinary
     public void deletePhysicalFile(String urlOrFileName) {
         if (urlOrFileName == null || urlOrFileName.isEmpty()) return;
-
-        // Gọi CloudinaryService xử lý dọn dẹp ảnh
         cloudinaryService.deleteImage(urlOrFileName);
     }
 
-    // --- Hàm Helper để kiểm tra trùng lặp biến thể ---
     private void validateVariants(List<ProductVariantRequest> variants) {
         if (variants == null || variants.isEmpty()) return;
 
@@ -166,7 +147,6 @@ public class ProductService {
             });
         }
 
-        // VARIANTS
         product.setProductVariants(new ArrayList<>());
         if(productRequest.getVariants() != null){
             productRequest.getVariants().forEach(v -> {
@@ -209,23 +189,16 @@ public class ProductService {
         oldProduct.setPrice(productRequest.getPrice());
         oldProduct.setBrand(brand);
 
-        // --- Handle images ---
         List<String> newUrls = productRequest.getImages() != null ? productRequest.getImages() : new ArrayList<>();
-
-        // Tìm những ảnh cũ CẦN XOÁ (Có trong DB nhưng không có trong Request mới)
         List<Image> toDelete = oldProduct.getImages().stream()
                 .filter(img -> !newUrls.contains(img.getUrl()))
                 .collect(Collectors.toList());
 
-        // Gọi hàm helper dọn dẹp file vật lý
         for (Image img : toDelete) {
             deletePhysicalFile(img.getUrl());
         }
-
-        // Xoá các bản ghi Image cũ khỏi Product
         oldProduct.getImages().removeAll(toDelete);
 
-        // Thêm những ảnh mới hoàn toàn
         List<String> existingUrls = oldProduct.getImages().stream()
                 .map(Image::getUrl)
                 .collect(Collectors.toList());
@@ -239,26 +212,39 @@ public class ProductService {
             }
         }
 
-        // ================= VARIANTS =================
-        oldProduct.getProductVariants().clear();
+        oldProduct.getProductVariants().forEach(v -> v.setDeleted(true));
+
         if(productRequest.getVariants() != null){
             productRequest.getVariants().forEach(v -> {
-                Color color = colorRepository.findById(v.getColorId())
-                        .orElseThrow(() -> new AppException(ErrorCode.COLOR_NOT_FOUND));
+                ProductColorSize existingVariant = oldProduct.getProductVariants().stream()
+                        .filter(pv -> pv.getColor().getId().equals(v.getColorId())
+                                && pv.getSize().getId().equals(v.getSizeId()))
+                        .findFirst()
+                        .orElse(null);
 
-                Size size = sizeRepository.findById(v.getSizeId())
-                        .orElseThrow(() -> new AppException(ErrorCode.SIZE_NOT_FOUND));
+                if (existingVariant != null) {
+                    existingVariant.setDeleted(false);
+                    existingVariant.setStock(v.getStock());
+                } else {
+                    Color color = colorRepository.findById(v.getColorId())
+                            .orElseThrow(() -> new AppException(ErrorCode.COLOR_NOT_FOUND));
 
-                ProductColorSize pcs = ProductColorSize.builder()
-                        .product(oldProduct)
-                        .color(color)
-                        .size(size)
-                        .stock(v.getStock())
-                        .build();
+                    Size size = sizeRepository.findById(v.getSizeId())
+                            .orElseThrow(() -> new AppException(ErrorCode.SIZE_NOT_FOUND));
 
-                oldProduct.getProductVariants().add(pcs);
+                    ProductColorSize pcs = ProductColorSize.builder()
+                            .product(oldProduct)
+                            .color(color)
+                            .size(size)
+                            .stock(v.getStock())
+                            .isDeleted(false)
+                            .build();
+
+                    oldProduct.getProductVariants().add(pcs);
+                }
             });
         }
+
         productRepository.save(oldProduct);
         return ProductMapper.toResponse(oldProduct);
     }
@@ -268,11 +254,12 @@ public class ProductService {
         Product oldProduct = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if(oldProduct.getImages() != null){
-            for(Image img : oldProduct.getImages()){
-                deletePhysicalFile(img.getUrl());
-            }
+        oldProduct.setDeleted(true);
+
+        if (oldProduct.getProductVariants() != null) {
+            oldProduct.getProductVariants().forEach(v -> v.setDeleted(true));
         }
-        productRepository.delete(oldProduct);
+
+        productRepository.save(oldProduct);
     }
 }

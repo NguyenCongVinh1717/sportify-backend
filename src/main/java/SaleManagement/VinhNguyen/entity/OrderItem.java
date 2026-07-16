@@ -15,6 +15,12 @@ public class OrderItem {
     private Long id;
     private double price;
     private int quantity;
+
+    private String productNameSnapshot;
+    private String colorSnapshot;
+    private String sizeSnapshot;
+    private String imageUrlSnapshot;
+
     @ManyToOne(fetch = FetchType.LAZY,optional = true)
     @JoinColumn(name = "product_color_size_id",nullable = false)
     private ProductColorSize productColorSize;

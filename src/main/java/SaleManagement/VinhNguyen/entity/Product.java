@@ -19,6 +19,9 @@ public class Product {
     private String productName;
     private double price;
 
+    @Builder.Default
+    private boolean isDeleted = false;
+
     @ManyToOne(fetch = FetchType.LAZY,optional = false)
     @JoinColumn(name = "brand_id",nullable = false)
     private Brand brand;

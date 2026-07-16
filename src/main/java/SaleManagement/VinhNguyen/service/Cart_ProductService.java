@@ -4,7 +4,6 @@ import SaleManagement.VinhNguyen.entity.*;
 import SaleManagement.VinhNguyen.exception.AppException;
 import SaleManagement.VinhNguyen.exception.ErrorCode;
 import SaleManagement.VinhNguyen.mapper.CartMapper;
-import SaleManagement.VinhNguyen.mapper.ProductMapper;
 import SaleManagement.VinhNguyen.repository.*;
 import SaleManagement.VinhNguyen.request.CartRequest;
 import SaleManagement.VinhNguyen.response.CartResponse;
@@ -12,6 +11,9 @@ import SaleManagement.VinhNguyen.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class Cart_ProductService {
@@ -29,35 +31,41 @@ public class Cart_ProductService {
     private ProductColorSizeRepository productColorSizeRepository;
 
     public User getUser(String token){
-
         String email = jwtService.extractEmail(token);
-
         return userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new AppException(ErrorCode.USER_NOT_FOUND));
     }
-    @Transactional
-    public CartResponse addToCart(String token,CartRequest cartRequest){
-        User user=getUser(token);
-        Cart cart=cartService.getOrCreateCart(user);
 
-        ProductColorSize product=productColorSizeRepository.findById(cartRequest.getProductColorSizeId()).orElseThrow(
-                () -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-        Cart_Product cart_product=cartProductRepository.findByCartAndProductColorSize(cart,product).orElse(null);
-        if(cart_product!=null){
-            if(cart_product.getQuantity()+cartRequest.getQuantity()> product.getStock()){
+    @Transactional
+    public CartResponse addToCart(String token, CartRequest cartRequest){
+        User user = getUser(token);
+        Cart cart = cartService.getOrCreateCart(user);
+
+        ProductColorSize product = productColorSizeRepository.findById(cartRequest.getProductColorSizeId())
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        //check soft deleted ?
+        if (product.isDeleted() || product.getProduct().isDeleted()) {
+            throw new AppException(ErrorCode.STOP_SELL);
+        }
+
+        Cart_Product cart_product = cartProductRepository.findByCartAndProductColorSize(cart, product).orElse(null);
+        if(cart_product != null){
+            if(cart_product.getQuantity() + cartRequest.getQuantity() > product.getStock()){
                 throw new AppException(ErrorCode.RUN_OUT_OF_PRODUCT);
             }
-            cart_product.setQuantity(cart_product.getQuantity()+cartRequest.getQuantity());
+            cart_product.setQuantity(cart_product.getQuantity() + cartRequest.getQuantity());
         }
         else{
-            if(cartRequest.getQuantity()> product.getStock()){
+            if(cartRequest.getQuantity() > product.getStock()){
                 throw new AppException(ErrorCode.RUN_OUT_OF_PRODUCT);
             }
-            cart_product=Cart_Product.builder()
-            .cart(cart)
-            .productColorSize(product)
-            .quantity(cartRequest.getQuantity()).build();
+            cart_product = Cart_Product.builder()
+                    .cart(cart)
+                    .productColorSize(product)
+                    .quantity(cartRequest.getQuantity())
+                    .build();
             cartProductRepository.save(cart_product);
         }
         return CartMapper.toResponse(cart);
@@ -65,18 +73,22 @@ public class Cart_ProductService {
 
     @Transactional
     public CartResponse updateCart(String token, CartRequest cartRequest){
-
         User user = getUser(token);
         Cart cart = cartService.getOrCreateCart(user);
 
         ProductColorSize product = productColorSizeRepository.findById(cartRequest.getProductColorSizeId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
+        //check soft deleted ?
+        if (product.isDeleted() || product.getProduct().isDeleted()) {
+            throw new AppException(ErrorCode.STOP_SELL);
+        }
+
         Cart_Product cartProduct = cartProductRepository
                 .findByCartAndProductColorSize(cart, product)
                 .orElseThrow(() -> new AppException(ErrorCode.ITEM_NOT_FOUND));
 
-        if(cartRequest.getQuantity()> product.getStock()){
+        if(cartRequest.getQuantity() > product.getStock()){
             throw new AppException(ErrorCode.RUN_OUT_OF_PRODUCT);
         }
 
@@ -84,8 +96,8 @@ public class Cart_ProductService {
         return CartMapper.toResponse(cart);
     }
 
+    @Transactional
     public CartResponse removeFromCart(String token, Long productVariantId){
-
         User user = getUser(token);
         Cart cart = cartService.getOrCreateCart(user);
 
@@ -95,12 +107,37 @@ public class Cart_ProductService {
         Cart_Product item = cartProductRepository.findByCartAndProductColorSize(cart, product)
                 .orElseThrow(() -> new AppException(ErrorCode.ITEM_NOT_FOUND));
 
+        // 1. Gỡ bỏ liên kết phía đầu "One" (Cart) để ngăn cascade lưu ngược lại dữ liệu cũ
+        if (cart.getCart_products() != null) {
+            cart.getCart_products().remove(item);
+        }
+        // 2. Gỡ bỏ liên kết phía đầu "Many" (Cart_Product)
+        item.setCart(null);
         cartProductRepository.delete(item);
         return CartMapper.toResponse(cart);
     }
+
+    @Transactional
     public CartResponse getCart(String token){
         User user = getUser(token);
         Cart cart = cartService.getOrCreateCart(user);
+
+        //find all products in cart
+        List<Cart_Product> allItemsInCart = cartProductRepository.findByCart(cart);
+
+        List<Cart_Product> invalidItems = allItemsInCart.stream()
+                .filter(item -> item.getProductColorSize() == null
+                        || item.getProductColorSize().isDeleted()
+                        || item.getProductColorSize().getProduct().isDeleted())
+                .collect(Collectors.toList());
+
+        // If exist is_delete product => delete from cart
+        if (!invalidItems.isEmpty()) {
+            cartProductRepository.deleteAll(invalidItems);
+            // Update products in cart
+            cart.getCart_products().removeAll(invalidItems);
+        }
+
         return CartMapper.toResponse(cart);
     }
 }

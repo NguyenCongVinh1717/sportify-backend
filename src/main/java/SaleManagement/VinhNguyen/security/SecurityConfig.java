@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/cart/**").hasRole("USER")
                         .requestMatchers("/order/**").hasRole("USER")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/users/**").hasRole("ADMIN")
+                        .requestMatchers("/users/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )

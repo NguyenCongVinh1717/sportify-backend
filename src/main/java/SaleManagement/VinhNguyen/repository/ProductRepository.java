@@ -1,7 +1,6 @@
 package SaleManagement.VinhNguyen.repository;
 
 import SaleManagement.VinhNguyen.entity.Product;
-import SaleManagement.VinhNguyen.response.ProductResponse;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,30 +9,44 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Arrays;
 import java.util.List;
+
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    boolean existsByProductCode(@NotBlank(message = "Product code is required") String productCode);
 
-    List<Product> findByBrandId(Long brandId);
+    // Kiểm tra trùng mã code: Chỉ tính những sản phẩm chưa bị xóa
+    @Query("SELECT COUNT(p) > 0 FROM Product p WHERE p.productCode = :productCode AND p.isDeleted = false")
+    boolean existsByProductCode(@Param("productCode") String productCode);
 
-    Page<Product> findByProductNameContainingIgnoreCase(String keywords, Pageable pageable);
+    // Lấy danh sách theo thương hiệu: Chỉ lấy sản phẩm chưa bị xóa
+    List<Product> findByBrandIdAndIsDeletedFalse(Long brandId);
 
-    Page<Product> findAll(Pageable pageable);
+    // Tìm kiếm theo tên: Chỉ lấy sản phẩm chưa bị xóa
+    Page<Product> findByProductNameContainingIgnoreCaseAndIsDeletedFalse(String keywords, Pageable pageable);
 
-    Page<Product> findByBrandId(Long brandId, Pageable pageable);
+    // Lấy tất cả sản phẩm phân trang cho khách hàng: Chỉ lấy sản phẩm chưa bị xóa
+    Page<Product> findByIsDeletedFalse(Pageable pageable);
 
-    @Query("SELECT p FROM Product p WHERE p.brand.id = :brandId AND p.id != :productId")
+    // Lấy sản phẩm theo thương hiệu phân trang: Chỉ lấy sản phẩm chưa bị xóa
+    Page<Product> findByBrandIdAndIsDeletedFalse(Long brandId, Pageable pageable);
+
+    // Tìm sản phẩm liên quan: Chỉ lấy sản phẩm chưa bị xóa
+    @Query("SELECT p FROM Product p WHERE p.brand.id = :brandId AND p.id != :productId AND p.isDeleted = false")
     Page<Product> findRelatedProductsPaged(@Param("brandId") Long brandId,
                                            @Param("productId") Long productId,
                                            Pageable pageable);
-    Page<Product> findByPriceLessThanEqual(Double maxPrice, Pageable pageable);
 
+    // Lọc theo giá: Chỉ lấy sản phẩm chưa bị xóa
+    Page<Product> findByPriceLessThanEqualAndIsDeletedFalse(Double maxPrice, Pageable pageable);
+
+    // Bộ lọc tổng hợp (Filter): Chỉ lọc các sản phẩm chưa bị xóa
+    // và các biến thể chưa bị xóa (v.isDeleted = false)
     @Query("""
     SELECT DISTINCT p FROM Product p
     LEFT JOIN p.productVariants v
-    WHERE (:brandId IS NULL OR p.brand.id = :brandId)
+    WHERE p.isDeleted = false
+      AND (v IS NULL OR v.isDeleted = false)
+      AND (:brandId IS NULL OR p.brand.id = :brandId)
       AND (:maxPrice IS NULL OR p.price <= :maxPrice)
       AND (:colorIds IS NULL OR v.color.id IN :colorIds)
       AND (:sizeIds IS NULL OR v.size.id IN :sizeIds)
@@ -46,16 +59,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             Pageable pageable
     );
 
-    // THÊM MỚI: dùng cho tính năng AI tư vấn (ProductIndexingService)
-// JOIN FETCH sẵn brand + productVariants + color + size để tránh LazyInitializationException
-// khi ProductIndexingService xử lý dữ liệu ở bên ngoài transaction (ví dụ khi được gọi từ
-// AiStartupIndexer lúc khởi động app).
+    // Dùng cho AI tư vấn: Chỉ lấy sản phẩm và các biến thể chưa bị xóa
     @Query("""
     SELECT DISTINCT p FROM Product p
     LEFT JOIN FETCH p.brand
     LEFT JOIN FETCH p.productVariants v
     LEFT JOIN FETCH v.color
     LEFT JOIN FETCH v.size
+    WHERE p.isDeleted = false AND (v IS NULL OR v.isDeleted = false)
     """)
     List<Product> findAllWithDetails();
 }

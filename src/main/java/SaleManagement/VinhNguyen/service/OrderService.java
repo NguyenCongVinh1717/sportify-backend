@@ -51,27 +51,45 @@ public class OrderService {
                 .phone(orderRequest.getPhone())
                 .address(orderRequest.getAddress())
                 .user(user)
-                .paymentMethod(orderRequest.getPaymentMethod()) // Nhận từ Request: "COD" hoặc "VNPAY"
+                .paymentMethod(orderRequest.getPaymentMethod()) // "COD" hoặc "VNPAY"
                 .build();
 
         // Xử lý kiểm tra tồn kho và tính tiền
         double total = 0;
         List<OrderItem> orderItems = new ArrayList<>();
         for(Cart_Product cartProduct : cartItems){
-            ProductColorSize product = cartProduct.getProductColorSize();
-            if(cartProduct.getQuantity() > product.getStock()){
+            ProductColorSize productVariant = cartProduct.getProductColorSize();
+
+            // Nếu biến thể hoặc sản phẩm đã bị xóa mềm/ẩn trước khi thanh toán, chặn không cho mua
+            if (productVariant == null || productVariant.isDeleted() || productVariant.getProduct().isDeleted()) {
+                throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
+            }
+
+            if(cartProduct.getQuantity() > productVariant.getStock()){
                 throw new AppException(ErrorCode.RUN_OUT_OF_PRODUCT);
             }
-            product.setStock(product.getStock() - cartProduct.getQuantity());
+            productVariant.setStock(productVariant.getStock() - cartProduct.getQuantity());
 
+            // Lấy tạm ảnh đầu tiên của sản phẩm làm ảnh đại diện hóa đơn
+            String firstImageUrl = "";
+            if (productVariant.getProduct().getImages() != null && !productVariant.getProduct().getImages().isEmpty()) {
+                firstImageUrl = productVariant.getProduct().getImages().get(0).getUrl();
+            }
+
+            // 🟢 CẬP NHẬT: Đóng băng (Snapshot) thông tin sản phẩm tại thời điểm mua
             OrderItem orderItem = OrderItem.builder()
-                    .price(product.getProduct().getPrice())
+                    .price(productVariant.getProduct().getPrice())
                     .quantity(cartProduct.getQuantity())
-                    .productColorSize(product)
+                    .productColorSize(productVariant)
                     .order(order)
+                    .productNameSnapshot(productVariant.getProduct().getProductName())
+                    .colorSnapshot(productVariant.getColor().getColorName())
+                    .sizeSnapshot(productVariant.getSize().getSizeName())
+                    .imageUrlSnapshot(firstImageUrl)
                     .build();
+
             orderItems.add(orderItem);
-            total += product.getProduct().getPrice() * cartProduct.getQuantity();
+            total += productVariant.getProduct().getPrice() * cartProduct.getQuantity();
         }
 
         order.setOrderItems(orderItems);
@@ -81,7 +99,7 @@ public class OrderService {
 
         // CHIA NHÁNH LOGIC THEO ENUM VÀ PHƯƠNG THỨC THANH TOÁN
         if ("VNPAY".equalsIgnoreCase(orderRequest.getPaymentMethod())) {
-            order.setStatus(OrderStatus.UNPAID); // Đặt trạng thái: CHƯA THANH TOÁN
+            order.setStatus(OrderStatus.UNPAID); // CHƯA THANH TOÁN
             orderRepository.save(order);
 
             // Tạo link chuyển hướng VNPAY
@@ -89,11 +107,8 @@ public class OrderService {
 
             response = OrderMapper.toResponse(order);
             response.setPaymentUrl(paymentUrl); // Gán link trả về Frontend
-
-            // Lưu ý: Đơn online chưa trả tiền thì chưa xóa giỏ hàng ở đây.
-            // Ta sẽ xóa giỏ hàng ở hàm IPN/Callback khi VNPAY báo trả tiền thành công.
         } else {
-            order.setStatus(OrderStatus.PENDING); // Đặt trạng thái: CHỜ DUYỆT (COD)
+            order.setStatus(OrderStatus.PENDING); // CHỜ DUYỆT (COD)
             orderRepository.save(order);
 
             cartProductRepository.deleteAll(cartItems); // Xóa giỏ hàng luôn vì là COD
@@ -106,33 +121,32 @@ public class OrderService {
     @Transactional
     public void handleVNPayCallback(Map<String, String> fields) {
         String responseCode = fields.get("vnp_ResponseCode");
-        String txnRef = fields.get("vnp_TxnRef"); // Đây chính là Order ID ta truyền đi lúc tạo link
+        String txnRef = fields.get("vnp_TxnRef");
 
         if (txnRef != null) {
             Long orderId = Long.parseLong(txnRef);
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-            // vnp_ResponseCode == "00" nghĩa là người dùng đã chuyển khoản THÀNH CÔNG
             if ("00".equals(responseCode)) {
-                order.setStatus(OrderStatus.PENDING); // Đổi từ UNPAID sang PENDING (Chờ duyệt đi đơn)
+                order.setStatus(OrderStatus.PENDING);
                 orderRepository.save(order);
 
-                // Xóa giỏ hàng của người dùng vì họ đã trả tiền xong
                 Cart cart = cartRepository.findByUser(order.getUser())
                         .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
                 List<Cart_Product> cartItems = cartProductRepository.findByCart(cart);
                 cartProductRepository.deleteAll(cartItems);
             } else {
-                // Người dùng hủy thanh toán hoặc giao dịch lỗi
                 order.setStatus(OrderStatus.CANCELLED);
                 orderRepository.save(order);
 
-                // LƯU Ý HOÀN STOCK: Vì lúc checkout ta đã trừ stock của sản phẩm,
-                // nếu họ hủy không trả tiền, bạn nên viết thêm logic cộng lại số lượng vào kho ở đây nhé!
+                // HOÀN STOCK: Cộng lại số lượng vào kho
                 for (OrderItem item : order.getOrderItems()) {
-                    ProductColorSize product = item.getProductColorSize();
-                    product.setStock(product.getStock() + item.getQuantity());
+                    ProductColorSize productVariant = item.getProductColorSize();
+                    // 🟢 TRÁNH NULLPOINTER: Nếu sản phẩm/biến thể đã bị admin xóa mềm, không cố cập nhật kho nữa
+                    if (productVariant != null && !productVariant.isDeleted() && !productVariant.getProduct().isDeleted()) {
+                        productVariant.setStock(productVariant.getStock() + item.getQuantity());
+                    }
                 }
             }
         }
@@ -147,32 +161,24 @@ public class OrderService {
     }
 
     public List<OrderResponse> getAllOrdersForAdmin() {
-        // Bạn có thể viết thêm một hàm findByOrderByIdDesc() trong OrderRepository nếu muốn,
-        // ở đây dùng findAll() rồi chuyển sang DTO Response.
         return orderRepository.findAll().stream()
-                .sorted((o1, o2) -> o2.getId().compareTo(o1.getId())) // Sắp xếp đơn mới lên trước
+                .sorted((o1, o2) -> o2.getId().compareTo(o1.getId()))
                 .map(OrderMapper::toResponse)
                 .toList();
     }
 
     public List<OrderResponse> getOrdersByStatusForAdmin(OrderStatus status) {
-        // Gọi trực tiếp Repository tìm kiếm bằng Enum luôn, cực kỳ an toàn
         List<Order> orders = orderRepository.findByStatusOrderByIdDesc(status);
-
-        // Chuyển đổi sang List DTO Response
         return orders.stream()
                 .map(OrderMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-
     @Transactional
     public void updateOrderStatusByAdmin(Long orderId, String newStatusStr) {
-        // Tìm đơn hàng cần cập nhật
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        // Chuyển đổi chuỗi String nhận từ Frontend (ví dụ: "SHIPPING") sang Enum OrderStatus chuẩn của hệ thống
         OrderStatus newStatus;
         try {
             newStatus = OrderStatus.valueOf(newStatusStr.toUpperCase());
@@ -180,45 +186,40 @@ public class OrderService {
             throw new RuntimeException("Trạng thái đơn hàng không hợp lệ: " + newStatusStr);
         }
 
-        // Kiểm tra nếu trạng thái cũ đã là COMPLETED hoặc CANCELLED thì hạn chế cho sửa đổi bừa bãi
-        if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED) {
-            // Tùy nhu cầu, bạn có thể chặn không cho Admin sửa khi đơn đã đóng:
-            // throw new RuntimeException("Đơn hàng đã hoàn thành hoặc đã hủy, không thể thay đổi trạng thái!");
-        }
-
         // BẪY LOGIC HOÀN KHO: Nếu đổi trạng thái sang CANCELLED (Hủy đơn)
-        // và trước đó đơn hàng CHƯA bị hủy, tiến hành cộng lại số lượng vào kho.
         if (newStatus == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.CANCELLED) {
             for (OrderItem item : order.getOrderItems()) {
-                ProductColorSize product = item.getProductColorSize();
-                if (product != null) {
-                    product.setStock(product.getStock() + item.getQuantity());
-                    // Hibernate sẽ tự động ép cấu trúc UPDATE xuống DB nhờ có @Transactional
+                ProductColorSize productVariant = item.getProductColorSize();
+                // 🟢 TRÁNH NULLPOINTER: Chỉ cộng lại kho nếu biến thể chưa bị xóa hoàn toàn
+                if (productVariant != null && !productVariant.isDeleted() && !productVariant.getProduct().isDeleted()) {
+                    productVariant.setStock(productVariant.getStock() + item.getQuantity());
                 }
             }
         }
 
-        // BẪY LOGIC NGƯỢC: Nếu Admin lỡ tay bấm hủy, giờ khôi phục lại sang trạng thái khác
-        // thì phải trừ bớt kho đi (Nếu kho còn đủ)
+        // BẪY LOGIC NGƯỢC: Khôi phục đơn từ CANCELLED sang trạng thái khác
         if (order.getStatus() == OrderStatus.CANCELLED && newStatus != OrderStatus.CANCELLED) {
             for (OrderItem item : order.getOrderItems()) {
-                ProductColorSize product = item.getProductColorSize();
-                if (product != null) {
-                    if (product.getStock() < item.getQuantity()) {
+                ProductColorSize productVariant = item.getProductColorSize();
+                if (productVariant != null && !productVariant.isDeleted() && !productVariant.getProduct().isDeleted()) {
+                    if (productVariant.getStock() < item.getQuantity()) {
                         throw new RuntimeException("Không thể khôi phục đơn! Sản phẩm '"
-                                + product.getProduct().getProductName() + "' đã hết hàng trong kho.");
+                                + item.getProductNameSnapshot() + "' đã hết hàng trong kho.");
                     }
-                    product.setStock(product.getStock() - item.getQuantity());
+                    productVariant.setStock(productVariant.getStock() - item.getQuantity());
+                } else {
+                    // Nếu sản phẩm đã bị xóa mềm, không cho phép khôi phục đơn hàng này nữa
+                    throw new RuntimeException("Không thể khôi phục đơn vì sản phẩm này đã bị ngừng kinh doanh hoặc bị xóa khỏi hệ thống!");
                 }
             }
         }
 
-        // Cập nhật trạng thái mới và lưu vào Cơ sở dữ liệu
         order.setStatus(newStatus);
         orderRepository.save(order);
     }
+
     public OrderResponse getOrderUserByOrderId(Long id){
-        Order order=orderRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        Order order = orderRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
         return OrderMapper.toResponse(order);
     }
 }

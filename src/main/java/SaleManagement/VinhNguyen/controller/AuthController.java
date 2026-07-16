@@ -119,28 +119,4 @@ public class AuthController {
         return authResponse;
     }
 
-    @PostMapping("/forgot-password")
-    public Map<String, String> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
-        String message = authService.forgotPassword(request.getEmail().trim());
-        return Map.of("message", message);
-    }
-
-    @PostMapping("/reset-password")
-    public Map<String, String> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
-        String message = authService.resetPassword(
-                request.getEmail().trim(),
-                request.getOtp().trim(),
-                request.getNewPassword().trim()
-        );
-        return Map.of("message", message);
-    }
-
-    @PostMapping("/change-password")
-    public Map<String, String> changePassword(Principal principal, @RequestBody @Valid ChangePasswordRequest request) {
-        String message = authService.changePassword(
-                principal.getName(),
-                request
-        );
-        return Map.of("message", message);
-    }
 }

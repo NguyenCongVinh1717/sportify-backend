@@ -29,5 +29,8 @@ public class ProductColorSize {
     List<Cart_Product> cart_products;
     private int stock;
 
+    @Builder.Default
+    private boolean isDeleted = false;
+
 
 }

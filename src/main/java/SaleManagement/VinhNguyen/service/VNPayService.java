@@ -44,9 +44,23 @@ public class VNPayService {
 
 
         // timezone Việt Nam
-        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+//        Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+//
+//        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+//
+//        String vnp_CreateDate = formatter.format(cld.getTime());
+//        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+//
+//        cld.add(Calendar.MINUTE, 15);
+//
+//        String vnp_ExpireDate = formatter.format(cld.getTime());
+//        vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
+        // timezone Việt Nam
+        TimeZone tz = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
+        Calendar cld = Calendar.getInstance(tz);
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+        formatter.setTimeZone(tz);
 
         String vnp_CreateDate = formatter.format(cld.getTime());
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);

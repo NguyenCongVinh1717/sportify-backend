@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 // để không phải gọi tay POST /ai/reindex mỗi lần chạy lại app.
 // Nếu số lượng sản phẩm lớn, có thể cân nhắc bỏ @Component này và chỉ gọi /ai/reindex thủ công
 // (vì mỗi lần index sẽ tốn lượt gọi API embedding tới Google GenAI).
-@Component
+//@Component
 @RequiredArgsConstructor
 public class AiStartupIndexer implements ApplicationRunner {
 

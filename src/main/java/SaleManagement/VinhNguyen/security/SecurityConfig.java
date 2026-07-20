@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/order/**").hasRole("USER")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/users/**").permitAll()
+                        .requestMatchers("/ai/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/comments/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/comments/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/comments/**").hasRole("USER")

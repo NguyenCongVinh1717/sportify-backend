@@ -41,7 +41,7 @@ public class UserService {
     private final Map<String, String> forgotPasswordOtpStorage = new ConcurrentHashMap<>();
 
     public Page<UserResponse> getAllUsers(Pageable pageable) {
-        Page<User> userPage=userRepository.findAllOrderByIdDesc(pageable);
+        Page<User> userPage=userRepository.findAllByOrderByIdDesc(pageable);
         return userPage.map(UserMapper::toResponse);
     }
 

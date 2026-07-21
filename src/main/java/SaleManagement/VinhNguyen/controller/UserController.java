@@ -8,9 +8,12 @@ import SaleManagement.VinhNguyen.response.UserResponse;
 import SaleManagement.VinhNguyen.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.awt.print.Pageable;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +26,8 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
-    public List<UserResponse> getAllUsers() {
-        return userService.getAllUsers();
+    public Page<UserResponse> getAllUsers(@PageableDefault(size = 12)Pageable pageable) {
+        return userService.getAllUsers(pageable);
     }
 
     @PutMapping("/{id}/status")

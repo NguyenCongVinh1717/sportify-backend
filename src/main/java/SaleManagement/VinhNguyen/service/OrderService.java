@@ -14,6 +14,8 @@ import SaleManagement.VinhNguyen.response.OrderResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
@@ -164,18 +166,20 @@ public class OrderService {
                 .toList();
     }
 
-    public List<OrderResponse> getAllOrdersForAdmin() {
-        return orderRepository.findAll().stream()
-                .sorted((o1, o2) -> o2.getId().compareTo(o1.getId()))
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAllByOrderByIdDesc()
+                .stream()
                 .map(OrderMapper::toResponse)
                 .toList();
     }
+    public Page<OrderResponse> getAllOrdersForAdmin(Pageable pageable) {
+        Page<Order> orderPage = orderRepository.findAllByOrderByIdDesc(pageable);
+        return orderPage.map(OrderMapper::toResponse);
+    }
 
-    public List<OrderResponse> getOrdersByStatusForAdmin(OrderStatus status) {
-        List<Order> orders = orderRepository.findByStatusOrderByIdDesc(status);
-        return orders.stream()
-                .map(OrderMapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<OrderResponse> getOrdersByStatusForAdmin(OrderStatus status, Pageable pageable) {
+        Page<Order> orderPage = orderRepository.findByStatusOrderByIdDesc(status, pageable);
+        return orderPage.map(OrderMapper::toResponse);
     }
 
     @Transactional

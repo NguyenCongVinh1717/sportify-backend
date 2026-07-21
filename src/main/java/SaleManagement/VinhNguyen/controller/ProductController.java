@@ -24,9 +24,9 @@ public class ProductController {
     @GetMapping
     public Page<ProductResponse> getAllProductsPaged(
             @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) Long brandId,        // ✨ THÊM MỚI: lọc theo thương hiệu
-            @RequestParam(required = false) List<Long> colorIds, // ✨ THÊM MỚI: lọc theo màu sắc (nhiều màu)
-            @RequestParam(required = false) List<Long> sizeIds,  // ✨ THÊM MỚI: lọc theo kích cỡ (nhiều size)
+            @RequestParam(required = false) Long brandId,
+            @RequestParam(required = false) List<Long> colorIds,
+            @RequestParam(required = false) List<Long> sizeIds,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size
     ){

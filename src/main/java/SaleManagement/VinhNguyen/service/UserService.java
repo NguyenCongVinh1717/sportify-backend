@@ -11,6 +11,7 @@ import SaleManagement.VinhNguyen.request.UpdateProfileRequest;
 import SaleManagement.VinhNguyen.response.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.print.Pageable;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -39,10 +41,9 @@ public class UserService {
 
     private final Map<String, String> forgotPasswordOtpStorage = new ConcurrentHashMap<>();
 
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(UserMapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> userPage=userRepository.findAllOrderByIdDesc(pageable);
+        return userPage.map(UserMapper::toResponse);
     }
 
     @Transactional

@@ -14,14 +14,12 @@ import SaleManagement.VinhNguyen.response.ProductResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -104,6 +102,14 @@ public class ProductService {
 
         Page<Product> productPage = productRepository.findRelatedProductsPaged(brandId, id, pageable);
         return productPage.map(ProductMapper::toResponse);
+    }
+
+    public List<String> getSearchSuggestions(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        Pageable pageable = PageRequest.of(0, 5);
+        return productRepository.findSearchSuggestions(keyword.trim(), pageable);
     }
 
     public void deletePhysicalFile(String urlOrFileName) {

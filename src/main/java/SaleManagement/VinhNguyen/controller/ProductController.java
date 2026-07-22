@@ -81,6 +81,12 @@ public class ProductController {
             Pageable pageable) {
         return productService.getRelatedProductsPaged(id, pageable);
     }
+    @GetMapping("/suggestions")
+    public List<String> getSearchSuggestions(
+            @RequestParam(name = "keyword", required = false) String keyword
+    ) {
+        return productService.getSearchSuggestions(keyword);
+    }
 
     @PostMapping
     public ProductResponse createProduct(@RequestBody ProductRequest productRequest){

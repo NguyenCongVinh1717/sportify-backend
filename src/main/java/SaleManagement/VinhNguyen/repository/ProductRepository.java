@@ -69,4 +69,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     WHERE p.isDeleted = false AND (v IS NULL OR v.isDeleted = false)
     """)
     List<Product> findAllWithDetails();
+
+    @Query("SELECT DISTINCT p.productName FROM Product p WHERE LOWER(p.productName) LIKE LOWER(CONCAT('%', :keyword, '%')) AND p.isDeleted = false")
+    List<String> findSearchSuggestions(@Param("keyword") String keyword, Pageable pageable);
 }

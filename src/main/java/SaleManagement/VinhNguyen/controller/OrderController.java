@@ -5,6 +5,7 @@ import SaleManagement.VinhNguyen.request.OrderRequest;
 import SaleManagement.VinhNguyen.response.OrderResponse;
 import SaleManagement.VinhNguyen.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +35,7 @@ public class OrderController {
     @PostMapping("/checkout")
     public OrderResponse checkout(
             HttpServletRequest request,
-            @RequestBody OrderRequest orderRequest){
+            @RequestBody @Valid OrderRequest orderRequest){
         return orderService.checkout(getAccessToken(request), orderRequest, request);
     }
 

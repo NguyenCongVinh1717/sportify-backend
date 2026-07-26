@@ -35,33 +35,58 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 1. PUBLIC API - Cho phép truy cập tự do không cần Token
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/order/vnpay-callback").permitAll()
                         .requestMatchers("/images/**", "/upload/**", "/uploads/**").permitAll()
-                        .requestMatchers("/products/**", "/brands/**", "/colors/**", "/sizes/**").permitAll()
-                        .requestMatchers("/cart/**").hasRole("USER")
-                        .requestMatchers("/order/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // 2. SẢN PHẨM / THƯƠNG HIỆU / KÍCH THƯỚC / MÀU SẮC
+                        .requestMatchers(HttpMethod.GET, "/products/**", "/brands/**", "/colors/**", "/sizes/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/products/**", "/brands/**", "/colors/**", "/sizes/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/products/**", "/brands/**", "/colors/**", "/sizes/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/products/**", "/brands/**", "/colors/**", "/sizes/**").hasRole("ADMIN")
+
+                        // 3. QUẢN LÝ USER / ADMIN
+                        .requestMatchers("/users/**").hasRole("ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/users/**").permitAll()
-                        .requestMatchers("/ai/**").permitAll()
+
+                        // ==================== 4. CẤU HÌNH AI CHUẨN ====================
+                        // Cho phép tất cả mọi người (Khách + User + Admin) sử dụng tính năng tư vấn AI
+                        .requestMatchers("/ai/consult").permitAll()
+                        // Chỉ ADMIN mới có quyền trigger reindex dữ liệu AI
+                        .requestMatchers("/ai/reindex").hasRole("ADMIN")
+                        // Các endpoint AI phát sinh khác (nếu có) cũng chặn mặc định chỉ dành cho Admin
+                        .requestMatchers("/ai/**").hasRole("ADMIN")
+                        // ============================================================
+
+                        // 5. GIỎ HÀNG & ĐƠN HÀNG
+                        .requestMatchers("/cart/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/order/**").hasAnyRole("USER", "ADMIN")
+
+                        // 6. BÌNH LUẬN (COMMENTS)
                         .requestMatchers(HttpMethod.GET, "/comments/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/comments/**").hasRole("USER")
-                        .requestMatchers(HttpMethod.PUT, "/comments/**").hasRole("USER")
-                        .requestMatchers(HttpMethod.DELETE, "/comments/**").hasRole("USER")
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/comments/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/comments/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/comments/**").hasAnyRole("USER", "ADMIN")
+
+                        // Các request còn lại bắt buộc phải xác thực
                         .anyRequest().authenticated()
                 )
 
-                // ==================== ĐOẠN CẤU HÌNH BẮT BUỘC THÊM VÀO ====================
+                // Xử lý Lỗi 401 & 403
                 .exceptionHandling(exception -> exception
-                        // Ép Spring Security trả về 401 thay vì 403 khi chưa đăng nhập / thiếu token
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // Trả về đúng mã 401
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
                             response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Phiên làm việc hết hạn hoặc thiếu token.\"}");
+                            response.getWriter().write("{\"code\": 1026, \"message\": \"Phiên làm việc không hợp lệ hoặc thiếu Token.\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"code\": 1027, \"message\": \"Bạn không có quyền thực hiện thao tác này.\"}");
                         })
                 );
-        // =========================================================================
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

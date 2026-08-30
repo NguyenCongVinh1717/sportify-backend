@@ -121,6 +121,7 @@ public CorsConfigurationSource corsConfigurationSource() {
             "http://localhost:[*]",
             "http://127.0.0.1:[*]",
             "https://*.trycloudflare.com",
+            "https://sportify-frontend-xi.vercel.app",
             "https://sportify.com"
     ));
 

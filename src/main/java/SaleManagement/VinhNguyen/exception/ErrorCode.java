@@ -41,7 +41,8 @@ public enum ErrorCode {
     CANNOT_LOCK_YOURSELF(1029,"Cannot delete admin account" ,HttpStatus.BAD_REQUEST ),
     NEW_PASS_AGAIN_EQUAL_NEW_PASS(1031,"You must enter equal to new password above",HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_ORDER(1033,"Cannot cancel this order, please contact my shop",HttpStatus.BAD_REQUEST),
-    UNAUTHORIZED_CANCEL_ORDER(1034,"Cannot cancel other people's order",HttpStatus.BAD_REQUEST);
+    UNAUTHORIZED_CANCEL_ORDER(1034,"Cannot cancel other people's order",HttpStatus.BAD_REQUEST),
+    FORBIDDEN( 1035,"You don't have permission to access this resource",HttpStatus.FORBIDDEN);
     private final int code;
     private final String message;
     private final HttpStatusCode statusCode;

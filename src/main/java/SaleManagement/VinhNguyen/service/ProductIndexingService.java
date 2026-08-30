@@ -52,14 +52,15 @@ public class ProductIndexingService {
         }
 
         String content = String.format(
-                "Sản phẩm: %s%nThương hiệu: %s%nGiá: %,.0f đ%nKích cỡ có sẵn: %s%nMàu sắc có sẵn: %s",
-                p.getProductName(), brandName, p.getPrice(), sizes, colors
+                "Sản phẩm: %s%nThương hiệu: %s%nGiá: %,.0f đ%nKích cỡ có sẵn: %s%nMàu sắc có sẵn: %s%nMô tả: %s",
+                p.getProductName(), brandName, p.getPrice(), sizes, colors, p.getDescription() != null ? p.getDescription() : "Đang cập nhật"
         );
 
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("productId", p.getId());
         metadata.put("productName", p.getProductName());
         metadata.put("price", p.getPrice());
+        metadata.put("description", p.getDescription()); // Add description to metadata
 
         return new Document(content, metadata);
     }

@@ -48,16 +48,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/products/**", "/brands/**", "/colors/**", "/sizes/**").hasRole("ADMIN")
 
                         // 3. QUẢN LÝ USER / ADMIN
-                        .requestMatchers("/users/**").hasRole("ADMIN")
+//                        .requestMatchers("/users/**").hasRole("ADMIN")
+                        .requestMatchers("/auth/**", "/users/forgot-password", "/users/reset-password").permitAll()
+                        .requestMatchers("/users/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         // ==================== 4. CẤU HÌNH AI CHUẨN ====================
-                        // Cho phép tất cả mọi người (Khách + User + Admin) sử dụng tính năng tư vấn AI
-                        .requestMatchers("/ai/consult").permitAll()
-                        // Chỉ ADMIN mới có quyền trigger reindex dữ liệu AI
-                        .requestMatchers("/ai/reindex").hasRole("ADMIN")
-                        // Các endpoint AI phát sinh khác (nếu có) cũng chặn mặc định chỉ dành cho Admin
-                        .requestMatchers("/ai/**").hasRole("ADMIN")
+                                .requestMatchers("/ai/consult").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/ai/image/**").permitAll() // hoặc .hasAnyRole("USER","ADMIN")
+                                .requestMatchers("/ai/reindex").hasRole("ADMIN")
+                                .requestMatchers("/ai/**").hasRole("ADMIN")
                         // ============================================================
 
                         // 5. GIỎ HÀNG & ĐƠN HÀNG

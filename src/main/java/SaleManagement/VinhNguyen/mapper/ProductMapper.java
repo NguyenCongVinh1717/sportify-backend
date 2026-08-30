@@ -13,6 +13,7 @@ public class ProductMapper {
                 .productCode(productRequest.getProductCode())
                 .productName(productRequest.getProductName())
                 .price(productRequest.getPrice())
+                .description(productRequest.getDescription())
                 .build();
     }
 
@@ -33,7 +34,8 @@ public class ProductMapper {
                 .productCode(product.getProductCode())
                 .productName(product.getProductName())
                 .price(product.getPrice())
-                .quantity(totalQuantity);
+                .quantity(totalQuantity)
+                .description(product.getDescription());
 
         if(product.getBrand() != null){
             productResponse.brandId(product.getBrand().getId());

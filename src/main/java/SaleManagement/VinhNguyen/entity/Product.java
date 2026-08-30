@@ -18,6 +18,7 @@ public class Product {
     private String productCode;
     private String productName;
     private double price;
+    private String description;
 
     @Builder.Default
     private boolean isDeleted = false;

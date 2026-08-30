@@ -8,6 +8,7 @@ import lombok.*;
 @Setter
 @Builder
 public class OrderItemResponse {
+    private Long productId;
     private String productName;
     private String colorName;
     private String sizeName;

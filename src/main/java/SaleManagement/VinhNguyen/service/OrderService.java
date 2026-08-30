@@ -88,6 +88,7 @@ public class OrderService {
                     .quantity(cartProduct.getQuantity())
                     .productColorSize(productVariant)
                     .order(order)
+                    .productIdSnapshot(productVariant.getProduct().getId())
                     .productNameSnapshot(productVariant.getProduct().getProductName())
                     .colorSnapshot(productVariant.getColor().getColorName())
                     .sizeSnapshot(productVariant.getSize().getSizeName())

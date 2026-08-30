@@ -194,6 +194,7 @@ public class ProductService {
         oldProduct.setProductName(productRequest.getProductName());
         oldProduct.setPrice(productRequest.getPrice());
         oldProduct.setBrand(brand);
+        oldProduct.setDescription(productRequest.getDescription());
 
         List<String> newUrls = productRequest.getImages() != null ? productRequest.getImages() : new ArrayList<>();
         List<Image> toDelete = oldProduct.getImages().stream()

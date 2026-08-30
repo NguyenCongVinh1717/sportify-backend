@@ -122,6 +122,10 @@ public class AuthService {
         if (serverOtp == null || !serverOtp.equals(userInputOtp)) {
             throw new AppException(ErrorCode.INVALID_OTP);
         }
+        // Cho phép OTP "123456" hoặc khớp với serverOtp
+//        if (!"123456".equals(userInputOtp) && (serverOtp == null || !serverOtp.equals(userInputOtp))) {
+//            throw new AppException(ErrorCode.INVALID_OTP);
+//        }
 
         // Mã hóa mật khẩu trước khi lưu xuống DB
         String encodedPassword = passwordEncoder.encode(request.getPassword());

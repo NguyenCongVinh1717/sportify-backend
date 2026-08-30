@@ -20,6 +20,11 @@ public class CommentController {
         return commentService.getCommentByProductId(productId);
     }
 
+    @GetMapping("/product/{productId}/can-comment")
+    public boolean canComment(@PathVariable Long productId) {
+        return commentService.canUserComment(productId);
+    }
+
     @PostMapping
     public CommentResponse addComment(@RequestParam Long productId,
                                       @RequestBody CommentRequest commentRequest) {

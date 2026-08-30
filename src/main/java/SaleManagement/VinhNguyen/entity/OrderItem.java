@@ -16,6 +16,7 @@ public class OrderItem {
     private double price;
     private int quantity;
 
+    private Long productIdSnapshot;
     private String productNameSnapshot;
     private String colorSnapshot;
     private String sizeSnapshot;

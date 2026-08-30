@@ -17,6 +17,7 @@ public class OrderMapper {
                 .paymentMethod(order.getPaymentMethod())
                 .items(order.getOrderItems().stream()
                         .map(item -> OrderItemResponse.builder()
+                                .productId(item.getProductIdSnapshot())
                                 .productName(item.getProductNameSnapshot())
                                 .colorName(item.getColorSnapshot())
                                 .sizeName(item.getSizeSnapshot())

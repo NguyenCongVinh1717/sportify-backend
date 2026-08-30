@@ -24,6 +24,8 @@ public class ProductRequest {
     @NotNull(message = "Brand Id is required")
     private Long brandId;
 
+    @NotBlank(message = "Description is required")
+    private String description;
     private List<String> images;
     private List<ProductVariantRequest> variants;
 }

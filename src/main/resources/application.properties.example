@@ -30,6 +30,8 @@ spring.mail.username=your-email@gmail.com
 spring.mail.password=your-gmail-app-password
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
 
 vnpay.tmnCode=your-vnpay-tmn-code
 vnpay.hashSecret=your-vnpay-hash-secret

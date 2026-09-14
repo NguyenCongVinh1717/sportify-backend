@@ -16,6 +16,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage; // THÊM MỚI
 import org.springframework.mail.javamail.JavaMailSender; // THÊM MỚI
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.stringtemplate.v4.ST;
@@ -80,37 +81,41 @@ public class AuthService {
 
     public String register(RegisterRequest request){
 
-        boolean existed = userRepository
-                .existsByEmail(request.getEmail());
+        boolean existed = userRepository.existsByEmail(request.getEmail());
 
         if(existed){
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
-        // create OTP 6 digits
+        // 1. Tạo OTP 6 chữ số
         String otp = String.format("%06d", new Random().nextInt(1000000));
 
-        // 2. Lưu thông tin người dùng gõ vào bộ nhớ tạm thời
+        // 2. Lưu thông tin tạm
         pendingRegistrations.put(request.getEmail(), request);
         otpStorage.put(request.getEmail(), otp);
 
-        // 3. Thực hiện gửi Email chứa mã số OTP về Gmail thật của khách
+        // 3. Gọi hàm gửi mail chạy ngầm bất đồng bộ (Async)
+        sendOtpEmailAsync(request.getEmail(), otp);
+
+        // Trả về phản hồi lập tức cho Frontend, không để Vercel/Render bị timeout
+        return "Mã OTP đã được gửi thành công.";
+    }
+
+    @Async
+    public void sendOtpEmailAsync(String toEmail, String otp) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(request.getEmail());
+            message.setTo(toEmail);
             message.setSubject("[Sportify Style] Mã kích hoạt tài khoản thành viên");
             message.setText("Chào bạn,\n\nMã OTP để xác thực đăng ký tài khoản của bạn tại Sportify là: "
                     + otp + "\n\nMã có hiệu lực trong vòng 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.");
             mailSender.send(message);
         } catch (Exception e) {
             e.printStackTrace();
-            // Nếu gửi mail lỗi, xóa dữ liệu tạm ngay để tránh rác RAM
-            pendingRegistrations.remove(request.getEmail());
-            otpStorage.remove(request.getEmail());
-            throw new AppException(ErrorCode.NO_EMAIL);
+            // Nếu gửi mail lỗi, dọn dẹp bộ nhớ tạm
+            pendingRegistrations.remove(toEmail);
+            otpStorage.remove(toEmail);
         }
-
-        return "Mã OTP đã được gửi thành công.";
     }
 
     //Hàm kiểm tra mã OTP

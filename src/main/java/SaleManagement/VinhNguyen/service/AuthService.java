@@ -35,6 +35,7 @@ public class AuthService {
     private final JavaMailSender mailSender;
     private final RefreshTokenRepository refreshTokenRepository;
     private final LoginAttemptService loginAttemptService;
+    private final EmailService emailService;
 
     // THÊM MỚI: Bộ nhớ tạm thời lưu thông tin đăng ký và OTP (Tự giải phóng sau khi xác thực xong)
     private final Map<String, RegisterRequest> pendingRegistrations = new ConcurrentHashMap<>();
@@ -95,28 +96,12 @@ public class AuthService {
         otpStorage.put(request.getEmail(), otp);
 
         // 3. Gọi hàm gửi mail chạy ngầm bất đồng bộ (Async)
-        sendOtpEmailAsync(request.getEmail(), otp);
+        emailService.sendOtpEmailAsync(request.getEmail(), otp);
 
         // Trả về phản hồi lập tức cho Frontend, không để Vercel/Render bị timeout
         return "Mã OTP đã được gửi thành công.";
     }
 
-    @Async
-    public void sendOtpEmailAsync(String toEmail, String otp) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(toEmail);
-            message.setSubject("[Sportify Style] Mã kích hoạt tài khoản thành viên");
-            message.setText("Chào bạn,\n\nMã OTP để xác thực đăng ký tài khoản của bạn tại Sportify là: "
-                    + otp + "\n\nMã có hiệu lực trong vòng 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.");
-            mailSender.send(message);
-        } catch (Exception e) {
-            e.printStackTrace();
-            // Nếu gửi mail lỗi, dọn dẹp bộ nhớ tạm
-            pendingRegistrations.remove(toEmail);
-            otpStorage.remove(toEmail);
-        }
-    }
 
     //Hàm kiểm tra mã OTP
     public AuthResponse verifyOtp(String email, String userInputOtp) {

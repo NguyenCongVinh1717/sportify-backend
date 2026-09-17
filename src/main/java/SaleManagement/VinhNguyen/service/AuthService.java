@@ -7,23 +7,20 @@ import SaleManagement.VinhNguyen.exception.AppException;
 import SaleManagement.VinhNguyen.exception.ErrorCode;
 import SaleManagement.VinhNguyen.repository.RefreshTokenRepository;
 import SaleManagement.VinhNguyen.repository.UserRepository;
-import SaleManagement.VinhNguyen.request.ChangePasswordRequest;
 import SaleManagement.VinhNguyen.request.LoginRequest;
 import SaleManagement.VinhNguyen.request.RegisterRequest;
 import SaleManagement.VinhNguyen.response.AuthResponse;
 import SaleManagement.VinhNguyen.security.JwtService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage; // THÊM MỚI
-import org.springframework.mail.javamail.JavaMailSender; // THÊM MỚI
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.stringtemplate.v4.ST;
 
-import java.util.Map; // THÊM MỚI
-import java.util.Random; // THÊM MỚI
-import java.util.concurrent.ConcurrentHashMap; // THÊM MỚI
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -36,11 +33,9 @@ public class AuthService {
     private final LoginAttemptService loginAttemptService;
     private final EmailService emailService;
 
-    // THÊM MỚI: Bộ nhớ tạm thời lưu thông tin đăng ký và OTP (Tự giải phóng sau khi xác thực xong)
-    private final Map<String, RegisterRequest> pendingRegistrations = new ConcurrentHashMap<>();
-    private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
-    // Lưu OTP quên mật khẩu (Key: Email, Value: Mã OTP 6 số)
-    private final Map<String, String> forgotPasswordOtpStorage = new ConcurrentHashMap<>();
+    // Inject Redis và ObjectMapper xử lý JSON
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     public AuthResponse login(LoginRequest request){
 
@@ -90,31 +85,41 @@ public class AuthService {
         // 1. Tạo OTP 6 chữ số
         String otp = String.format("%06d", new Random().nextInt(1000000));
 
-        // 2. Lưu thông tin tạm
-        pendingRegistrations.put(request.getEmail(), request);
-        otpStorage.put(request.getEmail(), otp);
+        try {
+            // 2. Lưu thông tin đăng ký (chuyển sang JSON String) vào Redis với thời hạn (TTL) 5 phút
+            String requestJson = objectMapper.writeValueAsString(request);
+            redisTemplate.opsForValue().set("PENDING_REG:" + request.getEmail(), requestJson, 5, TimeUnit.MINUTES);
 
-        // 3. Gọi hàm gửi mail chạy ngầm bất đồng bộ (Async)
+            // 3. Lưu OTP vào Redis với thời hạn (TTL) 5 phút
+            redisTemplate.opsForValue().set("OTP:" + request.getEmail(), otp, 5, TimeUnit.MINUTES);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Lỗi mã hóa dữ liệu đăng ký", e);
+        }
+
+        // 4. Gọi hàm gửi mail chạy ngầm
         emailService.sendOtpEmailAsync(request.getEmail(), otp);
 
-        // Trả về phản hồi lập tức cho Frontend, không để Vercel/Render bị timeout
         return "Mã OTP đã được gửi thành công.";
     }
 
-
-    //Hàm kiểm tra mã OTP
+    // Hàm kiểm tra mã OTP từ Redis
     public AuthResponse verifyOtp(String email, String userInputOtp) {
-        String serverOtp = otpStorage.get(email);
-        RegisterRequest request = pendingRegistrations.get(email);
+        // Lấy OTP và Request tạm từ Redis
+        String serverOtp = redisTemplate.opsForValue().get("OTP:" + email);
+        String requestJson = redisTemplate.opsForValue().get("PENDING_REG:" + email);
 
         // Kiểm tra tính hợp lệ của mã OTP
-        if (serverOtp == null || !serverOtp.equals(userInputOtp)) {
+        if (serverOtp == null || !serverOtp.equals(userInputOtp) || requestJson == null) {
             throw new AppException(ErrorCode.INVALID_OTP);
         }
-        // Cho phép OTP "123456" hoặc khớp với serverOtp
-//        if (!"123456".equals(userInputOtp) && (serverOtp == null || !serverOtp.equals(userInputOtp))) {
-//            throw new AppException(ErrorCode.INVALID_OTP);
-//        }
+
+        RegisterRequest request;
+        try {
+            request = objectMapper.readValue(requestJson, RegisterRequest.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Lỗi giải mã dữ liệu đăng ký", e);
+        }
 
         // Mã hóa mật khẩu trước khi lưu xuống DB
         String encodedPassword = passwordEncoder.encode(request.getPassword());
@@ -130,11 +135,11 @@ public class AuthService {
         // CHÍNH THỨC LƯU VÀO DATABASE
         userRepository.save(user);
 
-        // Xóa sạch dữ liệu trong bộ nhớ tạm sau khi kích hoạt thành công
-        otpStorage.remove(email);
-        pendingRegistrations.remove(email);
+        // Xóa sạch dữ liệu tạm trong Redis sau khi kích hoạt thành công
+        redisTemplate.delete("OTP:" + email);
+        redisTemplate.delete("PENDING_REG:" + email);
 
-        // Tự động cấp luôn Token đăng nhập để Frontend lưu session vào thẳng Store luôn
+        // Tự động cấp luôn Token đăng nhập
         String accessToken = jwtService.generateToken(user);
         String refreshToken = createRefreshToken(user);
 
@@ -147,7 +152,6 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .build();
     }
-
 
     public AuthResponse loginWithGoogle(String googleTokenString) {
         String email;
@@ -177,11 +181,8 @@ public class AuthService {
             throw new RuntimeException("Lỗi xác thực Google: " + e.getMessage());
         }
 
-
-        // Tìm kiếm tài khoản trong Database
         User user = userRepository.findByEmail(email).orElse(null);
 
-        // Nếu tài khoản chưa từng tồn tại -> Tiến hành tự động đăng ký
         if (user == null) {
             user = User.builder()
                     .email(email)
@@ -194,12 +195,10 @@ public class AuthService {
             user = userRepository.save(user);
         }
 
-        //Kiểm tra nếu tài khoản đang bị khóa vĩnh viễn
         if (Boolean.FALSE.equals(user.getEnabled())) {
             throw new AppException(ErrorCode.ACCOUNT_DISABLED);
         }
 
-        // generate Token JWT
         String accessToken = jwtService.generateToken(user);
         String refreshToken = createRefreshToken(user);
 
@@ -212,11 +211,10 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .build();
     }
+
     @Transactional
     public String createRefreshToken(User user) {
-        //xoá refresh token cũ
         refreshTokenRepository.deleteByUser(user);
-        // Mỗi lần đăng nhập, tạo 1 token mới.
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(java.util.UUID.randomUUID().toString())
@@ -225,12 +223,10 @@ public class AuthService {
         return refreshTokenRepository.save(refreshToken).getToken();
     }
 
-
     public AuthResponse refreshAccessToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_TOKEN));
 
-        // Kiểm tra hết hạn
         if (refreshToken.getExpiryDate().isBefore(java.time.Instant.now())) {
             refreshTokenRepository.delete(refreshToken);
             throw new AppException(ErrorCode.TOKEN_EXPIRED);
@@ -238,7 +234,6 @@ public class AuthService {
 
         User user = refreshToken.getUser();
         String newAccessToken = jwtService.generateToken(user);
-        // Tùy chọn: Mày có thể xoay vòng refresh token (tạo mới luôn cả refresh token cho bảo mật)
         String newRefreshToken = createRefreshToken(user);
 
         return AuthResponse.builder()
@@ -253,7 +248,7 @@ public class AuthService {
 
     public AuthResponse logout(String refreshToken) {
         if (refreshToken != null) {
-             refreshTokenRepository.deleteByToken(refreshToken);
+            refreshTokenRepository.deleteByToken(refreshToken);
         }
 
         return AuthResponse.builder()
@@ -265,5 +260,4 @@ public class AuthService {
                 .refreshToken(null)
                 .build();
     }
-
 }

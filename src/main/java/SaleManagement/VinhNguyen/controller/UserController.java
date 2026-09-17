@@ -4,11 +4,11 @@ import SaleManagement.VinhNguyen.request.ChangePasswordRequest;
 import SaleManagement.VinhNguyen.request.ForgotPasswordRequest;
 import SaleManagement.VinhNguyen.request.ResetPasswordRequest;
 import SaleManagement.VinhNguyen.request.UpdateProfileRequest;
+import SaleManagement.VinhNguyen.response.CustomPageResponse;
 import SaleManagement.VinhNguyen.response.UserResponse;
 import SaleManagement.VinhNguyen.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,7 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
-    public Page<UserResponse> getAllUsers(@PageableDefault(size = 12) Pageable pageable) {
+    public CustomPageResponse<UserResponse> getAllUsers(@PageableDefault(size = 12) Pageable pageable) {
         return userService.getAllUsers(pageable);
     }
 
@@ -64,7 +64,7 @@ public class UserController {
 
     @PostMapping("/update-profile")
     public UserResponse updateProfile(Principal principal, @RequestBody @Valid UpdateProfileRequest request) {
-        return  userService.updateProfile(
+        return userService.updateProfile(
                 principal.getName(),
                 request
         );

@@ -7,9 +7,13 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Getter
 @Setter
-public class RegisterRequest {
+public class RegisterRequest implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @NotBlank(message = "Email is required")
     @Email(message = "The pattern of email is invalid")

@@ -9,6 +9,8 @@ import SaleManagement.VinhNguyen.request.SizeRequest;
 import SaleManagement.VinhNguyen.response.SizeResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,8 @@ public class SizeService {
     @Autowired
     private SizeRepository sizeRepository;
 
+    // Cache toàn bộ danh sách Size
+    @Cacheable(value = "sizes_all")
     public List<SizeResponse> getAll() {
         return sizeRepository.findAll()
                 .stream()
@@ -28,11 +32,15 @@ public class SizeService {
                 .toList();
     }
 
+    // Cache chi tiết từng Size theo ID
+    @Cacheable(value = "size_detail", key = "#id")
     public SizeResponse getById(Long id){
-        Size size=sizeRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SIZE_NOT_FOUND));
+        Size size = sizeRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SIZE_NOT_FOUND));
         return SizeMapper.toResponse(size);
     }
 
+    // Xóa cache danh sách khi THÊM MỚI Size
+    @CacheEvict(value = "sizes_all", allEntries = true)
     public SizeResponse create(SizeRequest request) {
 
         if(sizeRepository.existsBySizeCode(request.getSizeCode())){
@@ -46,6 +54,8 @@ public class SizeService {
         );
     }
 
+    // Xóa cả cache danh sách VÀ cache chi tiết khi CẬP NHẬT Size
+    @CacheEvict(value = {"sizes_all", "size_detail"}, allEntries = true)
     @Transactional
     public SizeResponse update(Long id, SizeRequest request){
 
@@ -61,6 +71,8 @@ public class SizeService {
         return SizeMapper.toResponse(size);
     }
 
+    // Xóa sạch mọi cache liên quan khi XÓA Size
+    @CacheEvict(value = {"sizes_all", "size_detail"}, allEntries = true)
     public void delete(Long id){
 
         Size size = sizeRepository.findById(id)

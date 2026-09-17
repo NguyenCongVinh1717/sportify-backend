@@ -10,9 +10,12 @@ import SaleManagement.VinhNguyen.repository.ProductRepository;
 import SaleManagement.VinhNguyen.repository.SizeRepository;
 import SaleManagement.VinhNguyen.request.ProductRequest;
 import SaleManagement.VinhNguyen.request.ProductVariantRequest;
+import SaleManagement.VinhNguyen.response.CustomPageResponse;
 import SaleManagement.VinhNguyen.response.ProductResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +42,9 @@ public class ProductService {
     @Value("${upload.path}")
     private String uploadPath;
 
-    public Page<ProductResponse> filterProducts(
+    // Cache kết quả lọc sản phẩm
+    @Cacheable(value = "products_filter", key = "{#maxPrice, #brandId, #colorIds, #sizeIds, #pageable.pageNumber}")
+    public CustomPageResponse<ProductResponse> filterProducts(
             Double maxPrice,
             Long brandId,
             List<Long> colorIds,
@@ -49,28 +54,33 @@ public class ProductService {
         Page<Product> productPage = productRepository.filterProducts(
                 maxPrice, brandId, colorIds, sizeIds, pageable
         );
-        return productPage.map(ProductMapper::toResponse);
+        return CustomPageResponse.fromPage(productPage.map(ProductMapper::toResponse));
     }
 
-    // Get product is_delete=false
-    public Page<ProductResponse> getAllProductsPaged(Pageable pageable) {
+    // Cache danh sách sản phẩm phân trang
+    @Cacheable(value = "products_page", key = "#pageable.pageNumber")
+    public CustomPageResponse<ProductResponse> getAllProductsPaged(Pageable pageable) {
         Page<Product> productPage = productRepository.findByIsDeletedFalse(pageable);
-        return productPage.map(ProductMapper::toResponse);
+        return CustomPageResponse.fromPage(productPage.map(ProductMapper::toResponse));
     }
 
-    // Get product is_delete=false
+    // Cache toàn bộ danh sách sản phẩm (Không phân trang)
+    @Cacheable(value = "products_all")
     public List<ProductResponse> getAllProducts(){
         return productRepository.findByIsDeletedFalse(Pageable.unpaged()).getContent().stream()
                 .map(ProductMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    // Get product is_delete=false
-    public Page<ProductResponse> getProductsByBrandIdPaged(Long brandId, Pageable pageable) {
+    // Cache danh sách sản phẩm theo thương hiệu (Phân trang)
+    @Cacheable(value = "products_by_brand_page", key = "{#brandId, #pageable.pageNumber}")
+    public CustomPageResponse<ProductResponse> getProductsByBrandIdPaged(Long brandId, Pageable pageable) {
         Page<Product> productPage = productRepository.findByBrandIdAndIsDeletedFalse(brandId, pageable);
-        return productPage.map(ProductMapper::toResponse);
+        return CustomPageResponse.fromPage(productPage.map(ProductMapper::toResponse));
     }
 
+    // Cache chi tiết 1 sản phẩm theo ID
+    @Cacheable(value = "product_detail", key = "#id")
     public ProductResponse getProductById(Long id){
         Product product = productRepository.findById(id).orElseThrow(() ->
                 new AppException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -80,28 +90,34 @@ public class ProductService {
         return ProductMapper.toResponse(product);
     }
 
-    // Get product is_delete=false
+    // Cache danh sách sản phẩm theo thương hiệu (Không phân trang)
+    @Cacheable(value = "products_by_brand", key = "#brandId")
     public List<ProductResponse> getProductsByBrandId(Long brandId) {
         return productRepository.findByBrandIdAndIsDeletedFalse(brandId).stream()
                 .map(ProductMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    // Get product is_delete=false
-    public Page<ProductResponse> getProductsByKeywords(String keywords, Pageable pageable) {
+    // Cache kết quả tìm kiếm theo từ khóa
+    @Cacheable(value = "products_search", key = "{#keywords, #pageable.pageNumber}")
+    public CustomPageResponse<ProductResponse> getProductsByKeywords(String keywords, Pageable pageable) {
         String cleanKeywords = keywords != null ? keywords.trim() : "";
-        return productRepository.findByProductNameContainingIgnoreCaseAndIsDeletedFalse(cleanKeywords, pageable)
+        Page<ProductResponse> page = productRepository
+                .findByProductNameContainingIgnoreCaseAndIsDeletedFalse(cleanKeywords, pageable)
                 .map(ProductMapper::toResponse);
+        return CustomPageResponse.fromPage(page);
     }
 
-    public Page<ProductResponse> getRelatedProductsPaged(Long id, Pageable pageable) {
+    // Cache danh sách sản phẩm liên quan
+    @Cacheable(value = "products_related", key = "{#id, #pageable.pageNumber}")
+    public CustomPageResponse<ProductResponse> getRelatedProductsPaged(Long id, Pageable pageable) {
         Product currentProduct = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
         Long brandId = currentProduct.getBrand().getId();
 
         Page<Product> productPage = productRepository.findRelatedProductsPaged(brandId, id, pageable);
-        return productPage.map(ProductMapper::toResponse);
+        return CustomPageResponse.fromPage(productPage.map(ProductMapper::toResponse));
     }
 
     public List<String> getSearchSuggestions(String keyword) {
@@ -130,6 +146,11 @@ public class ProductService {
         }
     }
 
+    @CacheEvict(value = {
+            "products_filter", "products_page", "products_all",
+            "products_by_brand_page", "products_by_brand",
+            "products_search", "products_related"
+    }, allEntries = true)
     @Transactional
     public ProductResponse createProduct(ProductRequest productRequest){
         if(productRepository.existsByProductCode(productRequest.getProductCode())){
@@ -176,6 +197,11 @@ public class ProductService {
         return ProductMapper.toResponse(product);
     }
 
+    @CacheEvict(value = {
+            "products_filter", "products_page", "products_all",
+            "products_by_brand_page", "products_by_brand",
+            "products_search", "products_related", "product_detail"
+    }, allEntries = true)
     @Transactional
     public ProductResponse updateProduct(Long id, ProductRequest productRequest) {
         Product oldProduct = productRepository
@@ -256,6 +282,11 @@ public class ProductService {
         return ProductMapper.toResponse(oldProduct);
     }
 
+    @CacheEvict(value = {
+            "products_filter", "products_page", "products_all",
+            "products_by_brand_page", "products_by_brand",
+            "products_search", "products_related", "product_detail"
+    }, allEntries = true)
     @Transactional
     public void deleteProduct(Long id){
         Product oldProduct = productRepository.findById(id)

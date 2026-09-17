@@ -2,12 +2,15 @@ package SaleManagement.VinhNguyen.response;
 
 import lombok.*;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @Builder
-public class ProductVariantResponse {
+public class ProductVariantResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Long id;
     private Long colorId;
     private String colorCode;

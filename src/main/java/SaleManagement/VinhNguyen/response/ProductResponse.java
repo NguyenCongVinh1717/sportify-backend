@@ -3,6 +3,7 @@ package SaleManagement.VinhNguyen.response;
 import SaleManagement.VinhNguyen.entity.Image;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @AllArgsConstructor
@@ -10,7 +11,8 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-public class ProductResponse {
+public class ProductResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Long id;
     private String productCode;
     private String productName;

@@ -43,7 +43,7 @@ public class ProductService {
     private String uploadPath;
 
     // Cache kết quả lọc sản phẩm
-    @Cacheable(value = "products_filter", key = "{#maxPrice, #brandId, #colorIds, #sizeIds, #pageable.pageNumber}")
+    @Cacheable(value = "products_filter", key = "{#maxPrice, #brandId, #colorIds, #sizeIds, #pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
     public CustomPageResponse<ProductResponse> filterProducts(
             Double maxPrice,
             Long brandId,
@@ -58,7 +58,7 @@ public class ProductService {
     }
 
     // Cache danh sách sản phẩm phân trang
-    @Cacheable(value = "products_page", key = "#pageable.pageNumber")
+    @Cacheable(value = "products_page", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
     public CustomPageResponse<ProductResponse> getAllProductsPaged(Pageable pageable) {
         Page<Product> productPage = productRepository.findByIsDeletedFalse(pageable);
         return CustomPageResponse.fromPage(productPage.map(ProductMapper::toResponse));
@@ -73,7 +73,7 @@ public class ProductService {
     }
 
     // Cache danh sách sản phẩm theo thương hiệu (Phân trang)
-    @Cacheable(value = "products_by_brand_page", key = "{#brandId, #pageable.pageNumber}")
+    @Cacheable(value = "products_by_brand_page", key = "{#brandId, #pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
     public CustomPageResponse<ProductResponse> getProductsByBrandIdPaged(Long brandId, Pageable pageable) {
         Page<Product> productPage = productRepository.findByBrandIdAndIsDeletedFalse(brandId, pageable);
         return CustomPageResponse.fromPage(productPage.map(ProductMapper::toResponse));
@@ -99,7 +99,7 @@ public class ProductService {
     }
 
     // Cache kết quả tìm kiếm theo từ khóa
-    @Cacheable(value = "products_search", key = "{#keywords, #pageable.pageNumber}")
+    @Cacheable(value = "products_search", key = "{#keywords, #pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
     public CustomPageResponse<ProductResponse> getProductsByKeywords(String keywords, Pageable pageable) {
         String cleanKeywords = keywords != null ? keywords.trim() : "";
         Page<ProductResponse> page = productRepository
@@ -109,7 +109,7 @@ public class ProductService {
     }
 
     // Cache danh sách sản phẩm liên quan
-    @Cacheable(value = "products_related", key = "{#id, #pageable.pageNumber}")
+    @Cacheable(value = "products_related", key = "{#id, #pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
     public CustomPageResponse<ProductResponse> getRelatedProductsPaged(Long id, Pageable pageable) {
         Product currentProduct = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));

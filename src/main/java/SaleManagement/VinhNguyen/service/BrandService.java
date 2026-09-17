@@ -38,7 +38,7 @@ public class BrandService {
     }
 
     // Xóa cache danh sách khi THÊM MỚI Thương hiệu
-    @CacheEvict(value = "brands_all", allEntries = true)
+    @CacheEvict(value = {"brands_all", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     public BrandResponse createBrand(BrandRequest brandRequest){
         boolean check = brandRepository.existsByBrandCode(brandRequest.getBrandCode());
         if(check){
@@ -50,7 +50,7 @@ public class BrandService {
     }
 
     // Xóa cả cache danh sách VÀ cache chi tiết (brand_detail) khi CẬP NHẬT Thương hiệu
-    @CacheEvict(value = {"brands_all", "brand_detail"}, allEntries = true)
+    @CacheEvict(value = {"brands_all", "brand_detail", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     @Transactional
     public BrandResponse updateBrand(Long id, BrandRequest brandRequest){
         Brand oldBrand = brandRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_EXISTED));
@@ -64,7 +64,7 @@ public class BrandService {
     }
 
     // Xóa sạch cache liên quan khi XÓA Thương hiệu
-    @CacheEvict(value = {"brands_all", "brand_detail"}, allEntries = true)
+    @CacheEvict(value = {"brands_all", "brand_detail", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     @Transactional
     public void deleteBrand(Long id){
         Brand brand = brandRepository.findById(id)

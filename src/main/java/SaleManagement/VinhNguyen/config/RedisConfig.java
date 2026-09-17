@@ -7,7 +7,8 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Duration;
 
@@ -21,13 +22,18 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+    public RedisCacheManager cacheManager(
+            RedisConnectionFactory connectionFactory,
+            @Value("${spring.cache.redis.time-to-live:600000}") long cacheTtlMillis) {
         // Dùng RedisSerializer.json() để Spring tự chọn Serializer phù hợp mà không lo lệch version Jackson
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1))
+                .entryTtl(Duration.ofMillis(cacheTtlMillis))
                 .disableCachingNullValues()
+                .prefixCacheNameWith("v3::")
                 .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(RedisSerializer.json())
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                new JdkSerializationRedisSerializer()
+                        )
                 );
 
         return RedisCacheManager.builder(connectionFactory)

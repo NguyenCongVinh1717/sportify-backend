@@ -37,7 +37,7 @@ public class UserService {
     private final StringRedisTemplate redisTemplate;
 
     // Cache danh sách phân trang User an toàn bằng CustomPageResponse
-    @Cacheable(value = "users_page", key = "#pageable.pageNumber")
+    @Cacheable(value = "users_page", key = "{#pageable.pageNumber, #pageable.pageSize, #pageable.sort}")
     public CustomPageResponse<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> userPage = userRepository.findAllByOrderByIdDesc(pageable);
         return CustomPageResponse.fromPage(userPage.map(UserMapper::toResponse));

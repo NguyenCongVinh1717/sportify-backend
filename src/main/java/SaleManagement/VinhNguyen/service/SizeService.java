@@ -40,7 +40,7 @@ public class SizeService {
     }
 
     // Xóa cache danh sách khi THÊM MỚI Size
-    @CacheEvict(value = "sizes_all", allEntries = true)
+    @CacheEvict(value = {"sizes_all", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     public SizeResponse create(SizeRequest request) {
 
         if(sizeRepository.existsBySizeCode(request.getSizeCode())){
@@ -55,7 +55,7 @@ public class SizeService {
     }
 
     // Xóa cả cache danh sách VÀ cache chi tiết khi CẬP NHẬT Size
-    @CacheEvict(value = {"sizes_all", "size_detail"}, allEntries = true)
+    @CacheEvict(value = {"sizes_all", "size_detail", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     @Transactional
     public SizeResponse update(Long id, SizeRequest request){
 
@@ -72,7 +72,7 @@ public class SizeService {
     }
 
     // Xóa sạch mọi cache liên quan khi XÓA Size
-    @CacheEvict(value = {"sizes_all", "size_detail"}, allEntries = true)
+    @CacheEvict(value = {"sizes_all", "size_detail", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     public void delete(Long id){
 
         Size size = sizeRepository.findById(id)

@@ -42,7 +42,7 @@ public class ColorService {
     }
 
     // Xóa cache danh sách khi THÊM MỚI Color
-    @CacheEvict(value = "colors_all", allEntries = true)
+    @CacheEvict(value = {"colors_all", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     public ColorResponse create(ColorRequest request) {
 
         if(colorRepository.existsByColorCode(request.getColorCode())){
@@ -57,7 +57,7 @@ public class ColorService {
     }
 
     // Xóa cả cache danh sách VÀ cache chi tiết khi CẬP NHẬT Color
-    @CacheEvict(value = {"colors_all", "color_detail"}, allEntries = true)
+    @CacheEvict(value = {"colors_all", "color_detail", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     @Transactional
     public ColorResponse update(Long id, ColorRequest request){
 
@@ -76,7 +76,7 @@ public class ColorService {
     }
 
     // Xóa sạch cache liên quan khi XÓA Color
-    @CacheEvict(value = {"colors_all", "color_detail"}, allEntries = true)
+    @CacheEvict(value = {"colors_all", "color_detail", "products_filter", "products_page", "products_all", "products_by_brand_page", "products_by_brand", "products_search", "products_related", "product_detail"}, allEntries = true)
     public void delete(Long id){
 
         Color color = colorRepository.findById(id)

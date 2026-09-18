@@ -42,7 +42,7 @@ public class RagConfig {
         };
 
         return PgVectorStore.builder(jdbcTemplate, fakeEmbeddingModel)
-                .dimensions(512)
+                .dimensions(2048)
                 .vectorTableName("vector_store_image")
                 .build();
     }

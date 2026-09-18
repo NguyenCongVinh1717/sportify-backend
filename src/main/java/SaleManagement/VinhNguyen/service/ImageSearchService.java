@@ -6,10 +6,10 @@ import SaleManagement.VinhNguyen.mapper.ProductMapper;
 import SaleManagement.VinhNguyen.repository.ProductRepository;
 import SaleManagement.VinhNguyen.response.ProductResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.transaction.Transactional;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,23 +19,24 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.ai.document.Document;
+
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ImageSearchService {
 
     private final VectorStore imageVectorStore;
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String PYTHON_SERVICE_URL = "http://127.0.0.1:8000/extract-image-vector";
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Inject URL từ application.properties (mặc định fallback 127.0.0.1 cho local)
+    @Value("${python.ai.service.url}")
+    private String pythonServiceUrl;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
     private ProductRepository productRepository;
 
@@ -57,7 +58,9 @@ public class ImageSearchService {
         body.add("file", fileResource);
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(PYTHON_SERVICE_URL, requestEntity, Map.class);
+
+        // Gọi API sử dụng biến pythonServiceUrl
+        ResponseEntity<Map> response = restTemplate.postForEntity(pythonServiceUrl, requestEntity, Map.class);
 
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             return (List<Double>) response.getBody().get("vector");
@@ -68,22 +71,20 @@ public class ImageSearchService {
     public void indexProductImage(Long productId, String productName, MultipartFile file) throws IOException {
         List<Double> vector = getVectorFromPython(file);
 
-        String id = java.util.UUID.randomUUID().toString();
+        String id = UUID.randomUUID().toString();
         String content = "Sản phẩm: " + productName;
         Map<String, Object> metadata = Map.of("productId", productId, "productName", productName);
 
         String metadataJson = objectMapper.writeValueAsString(metadata);
-        String vectorString = vector.toString(); // Dạng [v1, v2, v3...]
+        String vectorString = vector.toString();
 
-        // SỬA TẠI ĐÂY: Thêm ?::uuid cho vị trí của cột id
         String sql = "INSERT INTO public.vector_store_image (id, content, metadata, embedding) " +
                 "VALUES (?::uuid, ?, ?::jsonb, ?::vector) " +
                 "ON CONFLICT (id) DO UPDATE SET content = ?, metadata = ?::jsonb, embedding = ?::vector";
 
-        // Thứ tự truyền tham số phải khớp chính xác với số lượng dấu hỏi (?)
         jdbcTemplate.update(sql,
-                id, content, metadataJson, vectorString, // Cho phần VALUES
-                content, metadataJson, vectorString      // Cho phần UPDATE
+                id, content, metadataJson, vectorString,
+                content, metadataJson, vectorString
         );
     }
 
@@ -94,15 +95,18 @@ public class ImageSearchService {
         int candidateLimit = Math.max(topK, 20);
 
         String sql = """
-        SELECT metadata, (embedding <=> ?::vector) as distance
-        FROM public.vector_store_image
-        ORDER BY distance ASC
-        LIMIT ?
-    """;
+            SELECT metadata, (embedding <=> ?::vector) as distance
+            FROM public.vector_store_image
+            ORDER BY distance ASC
+            LIMIT ?
+        """;
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, vectorString, candidateLimit);
-        Map<Long, ProductResponse> uniqueResults = new java.util.LinkedHashMap<>();
-        double maxAllowedDistance = 0.35;
+        Map<Long, ProductResponse> uniqueResults = new LinkedHashMap<>();
+
+        // ĐỔI NGƯỠNG: ResNet50 dùng Cosine distance thường rơi vào khoảng 0.4 - 0.75
+        // (Nếu để 0.35 của CLIP cũ sẽ lọc mất hết kết quả)
+        double maxAllowedDistance = 0.75;
 
         for (Map<String, Object> row : rows) {
             try {
@@ -115,12 +119,9 @@ public class ImageSearchService {
                 Object metadataObj = row.get("metadata");
                 if (metadataObj == null) continue;
 
-                String metadataJson;
-                if (metadataObj.getClass().getName().equals("org.postgresql.util.PGobject")) {
-                    java.lang.reflect.Method method = metadataObj.getClass().getMethod("getValue");
-                    metadataJson = (String) method.invoke(metadataObj);
-                } else {
-                    metadataJson = metadataObj.toString();
+                String metadataJson = metadataObj.toString();
+                if (metadataObj.getClass().getName().contains("PGobject")) {
+                    metadataJson = (String) metadataObj.getClass().getMethod("getValue").invoke(metadataObj);
                 }
 
                 Map<String, Object> metaMap = objectMapper.readValue(metadataJson, Map.class);
@@ -189,20 +190,19 @@ public class ImageSearchService {
 
                 System.out.println("Tải ảnh thành công từ Cloudinary: " + successfullyDownloadedUrl);
 
-                MultipartFile multipartFile =
-                        new MockMultipartFile(
-                                "file",
-                                dbFileName,
-                                "image/jpeg",
-                                imageBytes
-                        );
+                MultipartFile multipartFile = new MockMultipartFile(
+                        "file",
+                        dbFileName,
+                        "image/jpeg",
+                        imageBytes
+                );
 
                 this.indexProductImage(product.getId(), product.getProductName(), multipartFile);
                 successCount++;
-                System.out.println(" Đã nạp thành công SP ID: " + product.getId());
+                System.out.println("Đã nạp thành công SP ID: " + product.getId());
 
             } catch (Exception e) {
-                System.err.println(" Lỗi xử lý AI sản phẩm ID " + product.getId() + ": " + e.getMessage());
+                System.err.println("Lỗi xử lý AI sản phẩm ID " + product.getId() + ": " + e.getMessage());
             }
         }
         return successCount;

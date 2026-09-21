@@ -216,7 +216,7 @@ public class ProductService {
                 throw new AppException(ErrorCode.PRODUCT_CODE_EXISTED);
             }
         }
-
+        oldProduct.setProductCode(productRequest.getProductCode());
         oldProduct.setProductName(productRequest.getProductName());
         oldProduct.setPrice(productRequest.getPrice());
         oldProduct.setBrand(brand);

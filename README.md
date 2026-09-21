@@ -229,7 +229,3 @@ mvn clean test
 Báo cáo JaCoCo sẽ được tạo tại đường dẫn: `target/site/jacoco/index.html`.
 
 ---
-
-## 📝 Đóng Góp & Bản Quyền
-
-Dự án được phát triển bởi **NguyenCongVinh1717** phục vụ hệ sinh thái thương mại điện tử **Sportify**.

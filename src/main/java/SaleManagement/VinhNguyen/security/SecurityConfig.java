@@ -54,10 +54,12 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         // ==================== 4. CẤU HÌNH AI CHUẨN ====================
-                                .requestMatchers("/ai/consult").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/ai/image/**").permitAll() // hoặc .hasAnyRole("USER","ADMIN")
-                                .requestMatchers("/ai/reindex").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/ai/reindex").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/ai/image/index").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/ai/image/reindex-all").hasRole("ADMIN")
                                 .requestMatchers("/ai/**").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/ai/consult").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/ai/image/search").permitAll()
                         // ============================================================
 
                         // 5. GIỎ HÀNG & ĐƠN HÀNG

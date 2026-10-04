@@ -231,8 +231,12 @@ public class AuthService {
             refreshTokenRepository.delete(refreshToken);
             throw new AppException(ErrorCode.TOKEN_EXPIRED);
         }
-
         User user = refreshToken.getUser();
+
+        if (!user.getEnabled()) {
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+        }
+
         String newAccessToken = jwtService.generateToken(user);
         String newRefreshToken = createRefreshToken(user);
 

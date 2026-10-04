@@ -54,9 +54,9 @@ public class OrderController {
 
         if (vnPayConfig.verifySignature(fields, vnp_SecureHash)) {
 
-            if ("00".equals(requestParams.get("vnp_ResponseCode"))) {
+            orderService.handleVNPayCallback(requestParams);
 
-                orderService.handleVNPayCallback(requestParams);
+            if ("00".equals(requestParams.get("vnp_ResponseCode"))) {
 
                 response.put("status", "SUCCESS");
                 response.put("message", "Thanh toán thành công");

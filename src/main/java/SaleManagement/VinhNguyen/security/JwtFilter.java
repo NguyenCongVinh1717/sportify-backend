@@ -1,12 +1,13 @@
 package SaleManagement.VinhNguyen.security;
 
+import SaleManagement.VinhNguyen.exception.AppException;
+import SaleManagement.VinhNguyen.exception.ErrorCode;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 
 @Component
@@ -37,26 +38,24 @@ public class JwtFilter extends GenericFilter {
         }
 
         // if exist=>extract and set into security context
-        if (token != null) {
-            try {
-                if (jwtService.validateToken(token)) {
-                    String email = jwtService.extractEmail(token);
+        if (token != null && jwtService.validateToken(token)) {
+            String email = jwtService.extractEmail(token);
+            var userDetails =
+                    userDetailsService.loadUserByUsername(email);
 
-                    var userDetails = userDetailsService.loadUserByUsername(email);
+            if (userDetails.isEnabled()
+                    && userDetails.isAccountNonLocked()) {
 
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails,
-                                    null,
-                                    userDetails.getAuthorities()
-                            );
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
 
-                    SecurityContextHolder
-                            .getContext()
-                            .setAuthentication(auth);
-                }
-            } catch (Exception e) {
-                SecurityContextHolder.clearContext();
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(auth);
             }
         }
 

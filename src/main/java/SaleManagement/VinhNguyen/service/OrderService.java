@@ -47,7 +47,16 @@ public class OrderService {
     private ProductColorSizeRepository productColorSizeRepository;
 
     @Transactional
-    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = {
+            "product_detail",
+            "products_filter",
+            "products_page",
+            "products_all",
+            "products_by_brand_page",
+            "products_by_brand",
+            "products_search",
+            "products_related"
+    }, allEntries = true)
     public OrderResponse checkout(String token, OrderRequest orderRequest, HttpServletRequest request){
         User user = cartProductService.getUser(token);
         Cart cart = cartRepository.findByUser(user)
@@ -137,7 +146,16 @@ public class OrderService {
     }
 
     @Transactional
-    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = {
+            "product_detail",
+            "products_filter",
+            "products_page",
+            "products_all",
+            "products_by_brand_page",
+            "products_by_brand",
+            "products_search",
+            "products_related"
+    }, allEntries = true)
     public void handleVNPayCallback(Map<String, String> fields) {
         String responseCode = fields.get("vnp_ResponseCode");
         String txnRef = fields.get("vnp_TxnRef");
@@ -196,7 +214,16 @@ public class OrderService {
     }
 
     @Transactional
-    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = {
+            "product_detail",
+            "products_filter",
+            "products_page",
+            "products_all",
+            "products_by_brand_page",
+            "products_by_brand",
+            "products_search",
+            "products_related"
+    }, allEntries = true)
     public void updateOrderStatusByAdmin(Long orderId, String newStatusStr) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -246,7 +273,16 @@ public class OrderService {
     }
 
     @Transactional
-    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = {
+            "product_detail",
+            "products_filter",
+            "products_page",
+            "products_all",
+            "products_by_brand_page",
+            "products_by_brand",
+            "products_search",
+            "products_related"
+    }, allEntries = true)
     public OrderResponse cancelOrder(String email, Long orderId){
         User user = userRepository.findByEmail(email).orElseThrow(()
                 -> new AppException(ErrorCode.USER_NOT_FOUND));

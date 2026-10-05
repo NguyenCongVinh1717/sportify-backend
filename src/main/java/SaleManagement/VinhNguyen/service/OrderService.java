@@ -5,14 +5,14 @@ import SaleManagement.VinhNguyen.enums.OrderStatus;
 import SaleManagement.VinhNguyen.exception.AppException;
 import SaleManagement.VinhNguyen.exception.ErrorCode;
 import SaleManagement.VinhNguyen.mapper.OrderMapper;
-import SaleManagement.VinhNguyen.repository.CartRepository;
-import SaleManagement.VinhNguyen.repository.Cart_ProductRepository;
-import SaleManagement.VinhNguyen.repository.OrderRepository;
-import SaleManagement.VinhNguyen.repository.UserRepository;
+import SaleManagement.VinhNguyen.repository.*;
 import SaleManagement.VinhNguyen.request.OrderRequest;
 import SaleManagement.VinhNguyen.response.OrderResponse;
+import SaleManagement.VinhNguyen.service.payment.PaymentStrategy;
+import SaleManagement.VinhNguyen.service.payment.PaymentStrategyFactory;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +41,13 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PaymentStrategyFactory paymentStrategyFactory;
+    @Autowired
+    private ProductColorSizeRepository productColorSizeRepository;
+
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public OrderResponse checkout(String token, OrderRequest orderRequest, HttpServletRequest request){
         User user = cartProductService.getUser(token);
         Cart cart = cartRepository.findByUser(user)
@@ -64,7 +70,9 @@ public class OrderService {
         double total = 0;
         List<OrderItem> orderItems = new ArrayList<>();
         for(Cart_Product cartProduct : cartItems){
-            ProductColorSize productVariant = cartProduct.getProductColorSize();
+            ProductColorSize productVariant = productColorSizeRepository
+                    .findByIdWithLock(cartProduct.getProductColorSize().getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
             // Nếu biến thể hoặc sản phẩm đã bị xóa mềm/ẩn trước khi thanh toán, chặn không cho mua
             if (productVariant == null || productVariant.isDeleted() || productVariant.getProduct().isDeleted()) {
@@ -102,30 +110,34 @@ public class OrderService {
         order.setOrderItems(orderItems);
         order.setTotalPrice(total);
 
-        OrderResponse response;
-
-        // CHIA NHÁNH LOGIC THEO ENUM VÀ PHƯƠNG THỨC THANH TOÁN
-        if ("VNPAY".equalsIgnoreCase(orderRequest.getPaymentMethod())) {
-            order.setStatus(OrderStatus.UNPAID); // CHƯA THANH TOÁN
-            orderRepository.save(order);
-
-            // Tạo link chuyển hướng VNPAY
-            String paymentUrl = vnPayService.createPaymentUrl(order, request);
-
-            response = OrderMapper.toResponse(order);
-            response.setPaymentUrl(paymentUrl); // Gán link trả về Frontend
-        } else {
-            order.setStatus(OrderStatus.PENDING); // CHỜ DUYỆT (COD)
-            orderRepository.save(order);
-
-            cartProductRepository.deleteAll(cartItems); // Xóa giỏ hàng luôn vì là COD
-            response = OrderMapper.toResponse(order);
-        }
+//        // CHIA NHÁNH LOGIC THEO ENUM VÀ PHƯƠNG THỨC THANH TOÁN
+//        if ("VNPAY".equalsIgnoreCase(orderRequest.getPaymentMethod())) {
+//            order.setStatus(OrderStatus.UNPAID); // CHƯA THANH TOÁN
+//            orderRepository.save(order);
+//
+//            // Tạo link chuyển hướng VNPAY
+//            String paymentUrl = vnPayService.createPaymentUrl(order, request);
+//
+//            response = OrderMapper.toResponse(order);
+//            response.setPaymentUrl(paymentUrl); // Gán link trả về Frontend
+//        } else {
+//            order.setStatus(OrderStatus.PENDING); // CHỜ DUYỆT (COD)
+//            orderRepository.save(order);
+//
+//            cartProductRepository.deleteAll(cartItems); // Xóa giỏ hàng luôn vì là COD
+//            response = OrderMapper.toResponse(order);
+//        }
+        PaymentStrategy paymentStrategy = paymentStrategyFactory.getStrategy(orderRequest.getPaymentMethod());
+        order.setStatus(paymentStrategy.getInitialOrderStatus());
+        orderRepository.save(order);
+        OrderResponse response = OrderMapper.toResponse(order);
+        paymentStrategy.processPayment(order, response, request);
 
         return response;
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public void handleVNPayCallback(Map<String, String> fields) {
         String responseCode = fields.get("vnp_ResponseCode");
         String txnRef = fields.get("vnp_TxnRef");
@@ -184,6 +196,7 @@ public class OrderService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public void updateOrderStatusByAdmin(Long orderId, String newStatusStr) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -233,6 +246,7 @@ public class OrderService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public OrderResponse cancelOrder(String email, Long orderId){
         User user = userRepository.findByEmail(email).orElseThrow(()
                 -> new AppException(ErrorCode.USER_NOT_FOUND));

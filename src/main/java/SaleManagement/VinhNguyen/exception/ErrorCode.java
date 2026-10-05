@@ -42,7 +42,8 @@ public enum ErrorCode {
     NEW_PASS_AGAIN_EQUAL_NEW_PASS(1031,"You must enter equal to new password above",HttpStatus.BAD_REQUEST),
     CANNOT_CANCEL_ORDER(1033,"Cannot cancel this order, please contact my shop",HttpStatus.BAD_REQUEST),
     UNAUTHORIZED_CANCEL_ORDER(1034,"Cannot cancel other people's order",HttpStatus.BAD_REQUEST),
-    FORBIDDEN( 1035,"You don't have permission to access this resource",HttpStatus.FORBIDDEN);
+    FORBIDDEN( 1035,"You don't have permission to access this resource",HttpStatus.FORBIDDEN),
+    INVALID_PAYMENT_METHOD(1036,"Invalid payment method",HttpStatus.BAD_REQUEST);
     private final int code;
     private final String message;
     private final HttpStatusCode statusCode;
